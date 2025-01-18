@@ -348,7 +348,7 @@ void LcdDisplay::SetEmotion(const std::string &emotion) {
         {"😍", "loving"},
         {"😳", "embarrassed"},
         {"😲", "surprised"},
-        {"😲", "shocked"},
+        {"😨", "shocked"},
         {"🤔", "thinking"},
         {"😉", "winking"},
         {"😎", "cool"},
@@ -375,3 +375,4 @@ void LcdDisplay::SetEmotion(const std::string &emotion) {
         lv_label_set_text(emotion_label_, FONT_AWESOME_EMOJI_NEUTRAL);
     }
 }
+

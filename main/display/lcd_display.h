@@ -46,7 +46,6 @@ public:
 
     void SetChatMessage(const std::string &role, const std::string &content) override;
     void SetEmotion(const std::string &emotion) override;
-
 };
 
 #endif // LCD_DISPLAY_H
