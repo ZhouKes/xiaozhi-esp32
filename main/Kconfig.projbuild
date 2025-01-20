@@ -73,7 +73,9 @@ choice BOARD_TYPE
     config BOARD_TYPE_YANGHE_BOX
         bool "yanghe box"
     config BOARD_TYPE_ESP32S3_EYE
-        bool "ESP32S3 EYE"       
+        bool "ESP32S3 EYE"    
+    config BOARD_TYPE_NV3401
+            bool "NV3401 Board"       
 endchoice
 
 choice DISPLAY_LCD_TYPE
