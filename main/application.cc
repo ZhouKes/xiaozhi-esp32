@@ -243,7 +243,7 @@ void Application::Start() {
         Application* app = (Application*)arg;
         app->MainLoop();
         vTaskDelete(NULL);
-    }, "main_loop", 4096 * 2, this, 2, nullptr);
+    }, "main_loop", 4096 * 4, this, 2, nullptr);
 
     /* Wait for the network to be ready */
     board.StartNetwork();
@@ -253,7 +253,7 @@ void Application::Start() {
         Application* app = (Application*)arg;
         app->CheckNewVersion();
         vTaskDelete(NULL);
-    }, "check_new_version", 4096 * 2, this, 1, nullptr);
+    }, "check_new_version", 4096 * 4, this, 1, nullptr);
 
 #if CONFIG_IDF_TARGET_ESP32S3
     audio_processor_.Initialize(codec->input_channels(), codec->input_reference());

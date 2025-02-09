@@ -6,18 +6,37 @@
 #include <driver/ledc.h>
 #include <vector>
 #include "board.h"
-
+ 
+#include "mmap_generate_lottie_assets.h"
+#include "lv_lottie.h"
 #define TAG "LcdDisplay"
 #define LCD_LEDC_CH LEDC_CHANNEL_0
 
 #define LCD_LVGL_TICK_PERIOD_MS 2
 #define LCD_LVGL_TASK_MAX_DELAY_MS 60
 #define LCD_LVGL_TASK_MIN_DELAY_MS 1
-#define LCD_LVGL_TASK_STACK_SIZE (4 * 1024)
+#define LCD_LVGL_TASK_STACK_SIZE (30 * 1024)
 #define LCD_LVGL_TASK_PRIORITY 1
 
 LV_FONT_DECLARE(font_awesome_30_4);
 
+mmap_assets_handle_t asset_lottie;
+
+static void app_mount_mmap_fs()
+{
+    const mmap_assets_config_t config_lottie = {
+        .partition_label = "animation",
+        .max_files = MMAP_LOTTIE_ASSETS_FILES,
+        .checksum = MMAP_LOTTIE_ASSETS_CHECKSUM,
+        .flags = {
+            .mmap_enable = true,
+            .app_bin_check = true,
+        },
+    };
+
+    mmap_assets_new(&config_lottie, &asset_lottie);
+    ESP_LOGI(TAG, "[%s]stored_files:%d", config_lottie.partition_label, mmap_assets_get_stored_files(asset_lottie));
+}
 
 static lv_disp_drv_t disp_drv;
 static void lcd_lvgl_flush_cb(lv_disp_drv_t *drv, const lv_area_t *area, lv_color_t *color_map)
@@ -99,7 +118,7 @@ LcdDisplay::LcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_handle_
     offset_y_ = offset_y;
 
     InitializeBacklight(backlight_pin);
-
+    app_mount_mmap_fs();
     // draw white
     std::vector<uint16_t> buffer(width_, 0xFFFF);
     for (int y = 0; y < height_; y++) {
@@ -246,6 +265,8 @@ void LcdDisplay::Unlock() {
     xSemaphoreGiveRecursive(lvgl_mutex_);
 }
 
+lv_obj_t *ui_face_canvas;
+
 void LcdDisplay::SetupUI() {
     DisplayLockGuard lock(this);
 
@@ -260,6 +281,22 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_pad_all(container_, 0, 0);
     lv_obj_set_style_border_width(container_, 0, 0);
     lv_obj_set_style_pad_row(container_, 0, 0);
+
+    ui_face_canvas = lv_lottie_create(container_);
+    lv_obj_align(ui_face_canvas, LV_ALIGN_CENTER, 0, 0);
+
+
+
+    static uint8_t *fb = NULL;;
+    if (fb == NULL) {
+        fb = (uint8_t*)malloc(240 * 240 * 4);
+        assert(fb);
+        lv_lottie_set_buffer(ui_face_canvas, 240, 240, fb);
+    }
+
+    void *data = (void*)mmap_assets_get_mem(asset_lottie, MMAP_LOTTIE_ASSETS_LOOK_JSON);
+    size_t size = mmap_assets_get_size(asset_lottie, MMAP_LOTTIE_ASSETS_LOOK_JSON);
+    lv_lottie_set_src_data(ui_face_canvas, data, size);
 
     /* Status bar */
     status_bar_ = lv_obj_create(container_);

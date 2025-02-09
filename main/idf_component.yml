@@ -17,6 +17,9 @@ dependencies:
   espressif/button: "^3.3.1"
   lvgl/lvgl: "~8.4.0"
   esp_lvgl_port: "~2.4.1"
+  espressif/thorvg: "0.*"
+  espressif2022/lottie_player: ^1.0.0
+  esp_mmap_assets: "1.*"
   ## Required IDF version
   idf:
     version: ">=5.3"

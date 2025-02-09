@@ -110,10 +110,7 @@ public:
         InitializeIot();
     }
 
-    virtual Led* GetLed() override {
-        static SingleLed led(BUILTIN_LED_GPIO);
-        return &led;
-    }
+ 
 
     virtual AudioCodec* GetAudioCodec() override {
 #ifdef AUDIO_I2S_METHOD_SIMPLEX
