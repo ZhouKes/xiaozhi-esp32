@@ -1,5 +1,5 @@
 #include "lcd_display.h"
-
+#include <esp_system.h>
 #include <font_awesome_symbols.h>
 #include <esp_log.h>
 #include <esp_err.h>
@@ -7,6 +7,7 @@
 #include <vector>
 #include <esp_lvgl_port.h>
 #include "board.h"
+#include "toast.c"
 
 #define TAG "LcdDisplay"
 #define LCD_LEDC_CH LEDC_CHANNEL_0
@@ -40,6 +41,8 @@ LcdDisplay::LcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_handle_
 
     ESP_LOGI(TAG, "Initialize LVGL port");
     lvgl_port_cfg_t port_cfg = ESP_LVGL_PORT_INIT_CONFIG();
+    port_cfg.task_stack = 30 * 1024;
+    port_cfg.task_affinity = 0;
     lvgl_port_init(&port_cfg);
 
     ESP_LOGI(TAG, "Adding LCD screen");
@@ -164,9 +167,25 @@ bool LcdDisplay::Lock(int timeout_ms) {
 void LcdDisplay::Unlock() {
     lvgl_port_unlock();
 }
+uint8_t *buf_toast = NULL;
 
 void LcdDisplay::SetupUI() {
     DisplayLockGuard lock(this);
+
+    buf_toast = (uint8_t*)heap_caps_malloc(120 * 120 * 8 + LV_DRAW_BUF_ALIGN, MALLOC_CAP_SPIRAM | MALLOC_CAP_32BIT);
+    if(buf_toast == NULL){
+         ESP_LOGE(TAG, "Failed to alloc buffer");
+    }else{
+        lv_obj_t * lottie_toast = lv_lottie_create(lv_screen_active());
+        lv_lottie_set_buffer(lottie_toast, 120, 120, buf_toast);
+        //extern const unsigned char toast[];
+        //extern const size_t toast_size;
+        lv_lottie_set_src_data(lottie_toast, toast, toast_size);
+        lv_obj_center(lottie_toast);
+        //lv_obj_align(lottie_toast, LV_ALIGN_TOP_LEFT, 10, 0);
+    }
+
+
 
     auto screen = lv_screen_active();
     lv_obj_set_style_text_font(screen, fonts_.text_font, 0);
