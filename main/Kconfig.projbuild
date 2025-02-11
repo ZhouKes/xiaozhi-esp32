@@ -87,7 +87,13 @@ choice BOARD_TYPE
     config BOARD_TYPE_DU_CHATX
         bool "嘟嘟开发板CHATX(wifi)"       
     config BOARD_TYPE_ESP32S3_Taiji_Pi
-        bool "太极小派esp32s3"    
+        bool "太极小派esp32s3" 
+    config BOARD_TYPE_BOX3_NEW
+        bool "BOX 3 NEW"   
+    config BOARD_TYPE_ESP32S3_EYE
+        bool "ESP32S3 EYE" 
+    config BOARD_TYPE_YANGHEBOX
+        bool "YANGHE BOX"         
 endchoice
 
 choice DISPLAY_LCD_TYPE
