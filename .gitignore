@@ -9,4 +9,8 @@ sdkconfig
 dependencies.lock
 .env
 releases/
+<<<<<<< HEAD
 .cache/
+=======
+main/assets/lang_config.h
+>>>>>>> main
