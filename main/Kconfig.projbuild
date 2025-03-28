@@ -154,6 +154,12 @@ choice BOARD_TYPE
         bool "无名科技星智1.54(ML307)"
     config BOARD_TYPE_SENSECAP_WATCHER
         bool "SenseCAP Watcher"
+    config BOARD_TYPE_BOX3_NEW
+        bool "ESP-BOX3-NEW"
+    config BOARD_TYPE_ESP32S3_EYE
+        bool "ESP32S3-EYE"
+    config BOARD_TYPE_YANGHEBOX
+        bool "Yanghe Box"
 endchoice
 
 choice DISPLAY_OLED_TYPE

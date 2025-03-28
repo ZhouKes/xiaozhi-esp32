@@ -132,6 +132,12 @@ elseif(CONFIG_BOARD_TYPE_SENSECAP_WATCHER)
     set(BOARD_TYPE "sensecap-watcher")
 elseif(CONFIG_BOARD_TYPE_ESP32_CGC)
     set(BOARD_TYPE "esp32-cgc")  
+elseif(CONFIG_BOARD_TYPE_BOX3_NEW)
+    set(BOARD_TYPE "esp-box-3-new")
+elseif(CONFIG_BOARD_TYPE_ESP32S3_EYE)
+    set(BOARD_TYPE "esp32s3-eye")
+elseif(CONFIG_BOARD_TYPE_YANGHEBOX)
+    set(BOARD_TYPE "yanghe-box")   
 endif()
 file(GLOB BOARD_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD_TYPE}/*.cc
