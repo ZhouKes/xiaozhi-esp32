@@ -414,7 +414,7 @@ void SetChatMessage(const char* role, const char* content) override{
     // 设置气泡宽度
     lv_obj_set_width(msg_bubble, bubble_width);
     lv_obj_set_height(msg_bubble, LV_SIZE_CONTENT);
-
+    lv_obj_set_style_bg_opa(msg_bubble, LV_OPA_50, 0);
     // Set alignment and style based on message role
     if (strcmp(role, "user") == 0) {
         // User messages are right-aligned with green background
