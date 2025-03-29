@@ -25,6 +25,8 @@
 #include "spd2010_touch.h"
 #include <font_awesome_symbols.h>
 #include "assets/lang_config.h"
+#include <esp_http_client.h>
+#include <cJSON.h>
 #define TAG "waveshare_lcd_1_46a"
 
 LV_FONT_DECLARE(time40);
@@ -101,6 +103,220 @@ LV_IMG_DECLARE(bg3);
 LV_IMG_DECLARE(bg4);
 // Current theme - initialize based on default config
 static ThemeColors current_theme = LIGHT_THEME;
+
+// 全局静态变量，用于天气任务函数访问
+static lv_obj_t* s_weather_temp_label = nullptr;
+
+// 定义一个全局缓冲区，用于HTTP事件处理器
+static char* s_weather_response_buffer = NULL;
+static int s_weather_response_len = 0;
+
+// HTTP事件处理函数
+static esp_err_t weather_http_event_handler(esp_http_client_event_t *evt)
+{
+    switch(evt->event_id) {
+        case HTTP_EVENT_ERROR:
+            ESP_LOGE(TAG, "HTTP_EVENT_ERROR");
+            break;
+        case HTTP_EVENT_ON_CONNECTED:
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_CONNECTED");
+            // 清空缓冲区
+            if (s_weather_response_buffer) {
+                free(s_weather_response_buffer);
+                s_weather_response_buffer = NULL;
+            }
+            s_weather_response_len = 0;
+            break;
+        case HTTP_EVENT_HEADERS_SENT:
+            ESP_LOGD(TAG, "HTTP_EVENT_HEADERS_SENT");
+            break;
+        case HTTP_EVENT_ON_HEADER:
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_HEADER, key=%s, value=%s", evt->header_key, evt->header_value);
+            break;
+        case HTTP_EVENT_ON_DATA:
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_DATA, len=%d", evt->data_len);
+            // 首次收到数据时分配内存
+            if (s_weather_response_buffer == NULL) {
+                s_weather_response_buffer = (char *)malloc(esp_http_client_get_content_length(evt->client) + 1);
+                if (s_weather_response_buffer == NULL) {
+                    ESP_LOGE(TAG, "Failed to allocate memory for response buffer");
+                    return ESP_FAIL;
+                }
+                s_weather_response_len = 0;
+            }
+            // 复制数据到缓冲区
+            memcpy(s_weather_response_buffer + s_weather_response_len, evt->data, evt->data_len);
+            s_weather_response_len += evt->data_len;
+            s_weather_response_buffer[s_weather_response_len] = 0; // 确保字符串以NULL结尾
+            break;
+        case HTTP_EVENT_ON_FINISH:
+            ESP_LOGD(TAG, "HTTP_EVENT_ON_FINISH");
+            break;
+        case HTTP_EVENT_DISCONNECTED:
+            ESP_LOGD(TAG, "HTTP_EVENT_DISCONNECTED");
+            break;
+        case HTTP_EVENT_REDIRECT:
+            ESP_LOGD(TAG, "HTTP_EVENT_REDIRECT");
+            break;
+        default:
+            ESP_LOGD(TAG, "未处理的HTTP事件: %d", evt->event_id);
+            break;
+    }
+    return ESP_OK;
+}
+
+// 天气获取函数
+static bool fetch_weather() {
+    if (!s_weather_temp_label) return false;
+    
+    // 检查网络连接状态
+    if (!WifiStation::GetInstance().IsConnected()) {
+        // 如果网络未连接，更新标签显示
+        lv_async_call([](void*) {
+            lv_label_set_text(s_weather_temp_label, "网络未连接，无法获取天气数据");
+        }, NULL);
+        return false; // 返回获取失败
+    }
+    
+    // 创建HTTP请求获取天气数据
+    esp_http_client_config_t config = {
+        .url = "http://xiaozhiota.online:5006/json",
+        .method = HTTP_METHOD_GET,
+        .timeout_ms = 30000, // 设置超时时间为30秒
+        .event_handler = weather_http_event_handler, // 设置事件处理器
+    };
+    
+    esp_http_client_handle_t client = esp_http_client_init(&config);
+    
+    // 重置响应缓冲区
+    if (s_weather_response_buffer) {
+        free(s_weather_response_buffer);
+        s_weather_response_buffer = NULL;
+    }
+    s_weather_response_len = 0;
+    
+    esp_err_t err = esp_http_client_perform(client);
+    bool fetch_success = false; // 获取结果标志
+    
+    if (err == ESP_OK) {
+        int status_code = esp_http_client_get_status_code(client);
+        if (status_code == 200) {
+            // 检查是否收到了响应数据
+            if (s_weather_response_buffer && s_weather_response_len > 0) {
+                // 解析JSON数据
+                cJSON *root = cJSON_Parse(s_weather_response_buffer);
+                if (root) {
+                    cJSON *location = cJSON_GetObjectItem(root, "location");
+                    cJSON *weather = cJSON_GetObjectItem(root, "weather");
+                    cJSON *temperature = cJSON_GetObjectItem(root, "temperature");
+                    cJSON *humidity = cJSON_GetObjectItem(root, "humidity");
+                    
+                    if (location && weather && temperature && humidity) {
+                        // 格式化天气信息
+                        char weather_info[128];
+                        snprintf(weather_info, sizeof(weather_info), 
+                                 "%s  %s  温度:%s°C  湿度:%s%%", 
+                                 location->valuestring, 
+                                 weather->valuestring,
+                                 temperature->valuestring,
+                                 humidity->valuestring);
+                        
+                        // 更新UI (注意: 这需要在主线程中执行)
+                        // 使用LVGL异步调用确保在主线程更新UI
+                        char *info_copy = strdup(weather_info);
+                        if (info_copy) {
+                            lv_async_call([](void* data) {
+                                char* info = (char*)data;
+                                lv_label_set_text(s_weather_temp_label, info);
+                                free(info);  // 释放复制的字符串
+                            }, info_copy);
+                            fetch_success = true; // 成功获取并显示天气数据
+                        }
+                    }
+                    
+                    cJSON_Delete(root);
+                } else {
+                    // 在主线程更新UI
+                    lv_async_call([](void*) {
+                        lv_label_set_text(s_weather_temp_label, "天气数据解析失败");
+                    }, NULL);
+                }
+            } else {
+                // 在主线程更新UI
+                lv_async_call([](void*) {
+                    lv_label_set_text(s_weather_temp_label, "未收到天气数据");
+                }, NULL);
+            }
+        } else {
+            // 显示HTTP错误
+            char error_msg[64];
+            snprintf(error_msg, sizeof(error_msg), "HTTP错误: %d", status_code);
+            char *msg_copy = strdup(error_msg);
+            if (msg_copy) {
+                lv_async_call([](void* data) {
+                    char* msg = (char*)data;
+                    lv_label_set_text(s_weather_temp_label, msg);
+                    free(msg);  // 释放复制的字符串
+                }, msg_copy);
+            }
+        }
+    } else {
+        // 显示连接错误
+        lv_async_call([](void*) {
+            lv_label_set_text(s_weather_temp_label, "连接服务器失败");
+        }, NULL);
+    }
+    
+    // 释放HTTP客户端和响应缓冲区
+    esp_http_client_cleanup(client);
+    if (s_weather_response_buffer) {
+        free(s_weather_response_buffer);
+        s_weather_response_buffer = NULL;
+    }
+    s_weather_response_len = 0;
+    
+    return fetch_success; // 返回获取结果
+}
+
+// 天气任务函数
+static void weather_task_func(void* arg) {
+    const int RETRY_INTERVAL = 10 * 1000; // 10秒重试间隔（毫秒）
+    const int SUCCESS_INTERVAL = 60 * 60 * 1000; // 1小时成功后间隔（毫秒）
+    
+    for (;;) {
+        // 执行天气获取
+        bool success = fetch_weather();
+        
+        if (success) {
+            // 获取成功，等待1小时
+            ESP_LOGI(TAG, "天气数据获取成功，1小时后重试");
+            vTaskDelay(pdMS_TO_TICKS(SUCCESS_INTERVAL));
+        } else {
+            // 获取失败，10秒后重试
+            ESP_LOGI(TAG, "天气数据获取失败，10秒后重试");
+            vTaskDelay(pdMS_TO_TICKS(RETRY_INTERVAL));
+        }
+    }
+}
+
+// 创建天气任务
+static void create_weather_task() {
+    static TaskHandle_t weather_task_handle = NULL;
+    
+    // 如果任务已存在则不再创建
+    if (weather_task_handle != NULL) {
+        return;
+    }
+    
+    xTaskCreate(
+        weather_task_func,
+        "weather_task",
+        4096,  // 栈大小
+        NULL,
+        5,     // 优先级
+        &weather_task_handle
+    );
+}
 
 class CustomLcdDisplay : public SpiLcdDisplay {
 public:
@@ -736,8 +952,6 @@ void SetupTab1() {
         "事常与人违，事总在人为。"
     };
 
-
-    
     void SetupTab2() {
         lv_obj_set_style_text_font(tab2, fonts_.text_font, 0);
         lv_obj_set_style_text_color(tab2, current_theme.text, 0);
@@ -766,8 +980,17 @@ void SetupTab1() {
         
         lv_obj_t *temp_label = lv_label_create(temp_container);
         lv_obj_set_style_text_font(temp_label, fonts_.text_font, 0);
-        lv_label_set_text(temp_label, "Temperature: 23°C");
+        lv_label_set_text(temp_label, "正在获取天气信息...");
         lv_obj_center(temp_label);
+        
+        // 保存到全局静态变量，以便任务函数访问
+        s_weather_temp_label = temp_label;
+        
+        // 创建并启动天气任务
+        create_weather_task();
+        
+        // 立即执行一次获取天气信息
+        fetch_weather();
         
         // Create time display area with large font
         lv_obj_t *time_container = lv_obj_create(tab2);
