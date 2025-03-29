@@ -173,7 +173,7 @@ static bool fetch_weather() {
     if (!WifiStation::GetInstance().IsConnected()) {
         // 如果网络未连接，更新标签显示
         lv_async_call([](void*) {
-            lv_label_set_text(s_weather_temp_label, "网络未连接，无法获取天气数据");
+            lv_label_set_text(s_weather_temp_label, "正在获取天气信息...");
         }, NULL);
         return false; // 返回获取失败
     }
@@ -212,10 +212,10 @@ static bool fetch_weather() {
                     cJSON *humidity = cJSON_GetObjectItem(root, "humidity");
                     
                     if (location && weather && temperature && humidity) {
-                        // 格式化天气信息
+                        // 格式化天气信息为两行显示
                         char weather_info[128];
                         snprintf(weather_info, sizeof(weather_info), 
-                                 "%s  %s  温度:%s°C  湿度:%s%%", 
+                                 "%s\n%s  温度:%s°C  湿度:%s%%", 
                                  location->valuestring, 
                                  weather->valuestring,
                                  temperature->valuestring,
@@ -416,8 +416,10 @@ void SetupTab1() {
     
     /* Container */
     container_ = lv_obj_create(tab1);
-    lv_obj_set_size(container_, LV_HOR_RES * 0.7, LV_VER_RES * 0.7);
-    lv_obj_center(container_);
+    // 将container_高度改为原来的四分之三，宽度保持不变
+    lv_obj_set_size(container_, LV_HOR_RES * 0.7, LV_VER_RES * 0.7 * 0.75);
+    // 将container_放置在屏幕下方
+    lv_obj_align(container_, LV_ALIGN_BOTTOM_MID, 0, -10);
     lv_obj_set_flex_flow(container_, LV_FLEX_FLOW_COLUMN);
     lv_obj_set_style_border_width(container_, 0, 0);
     lv_obj_set_style_pad_row(container_, 0, 0);
@@ -970,10 +972,23 @@ void SetupTab1() {
         /* Send to background */
         lv_obj_move_background(bg_img2);
         
+        // Create time display area with large font
+        lv_obj_t *time_container = lv_obj_create(tab2);
+        lv_obj_set_size(time_container, LV_HOR_RES * 0.8 - 40, 50 + 20);
+        lv_obj_align(time_container, LV_ALIGN_TOP_MID, 0, 30);  // 移动到顶部位置
+        lv_obj_set_style_radius(time_container, 10, 0);
+        lv_obj_set_style_bg_opa(time_container, LV_OPA_30, 0);
+        lv_obj_set_style_border_width(time_container, 0, 0);
+        
+        lv_obj_t *time_label = lv_label_create(time_container);
+        lv_obj_set_style_text_font(time_label, &time40 , 0); // Using larger font for time
+        lv_label_set_text(time_label, "00:00:00");
+        lv_obj_center(time_label);
+        
         // Create temperature display area
         lv_obj_t *temp_container = lv_obj_create(tab2);
-        lv_obj_set_size(temp_container, LV_HOR_RES * 0.8 - 40, 40 + 20);
-        lv_obj_align(temp_container, LV_ALIGN_TOP_MID, 0, 30);  // Moved to top position
+        lv_obj_set_size(temp_container, LV_HOR_RES * 0.8 - 40 + 60, 40 + 20);  // 恢复原来的高度
+        lv_obj_align(temp_container, LV_ALIGN_TOP_MID, 0, 100);  // 移动到中间位置
         lv_obj_set_style_radius(temp_container, 10, 0);
         lv_obj_set_style_bg_opa(temp_container, LV_OPA_30, 0);
         lv_obj_set_style_border_width(temp_container, 0, 0);
@@ -981,6 +996,9 @@ void SetupTab1() {
         lv_obj_t *temp_label = lv_label_create(temp_container);
         lv_obj_set_style_text_font(temp_label, fonts_.text_font, 0);
         lv_label_set_text(temp_label, "正在获取天气信息...");
+        lv_obj_set_width(temp_label, LV_HOR_RES * 0.8 - 40 + 60 - 20);  // 设置标签宽度
+        lv_label_set_long_mode(temp_label, LV_LABEL_LONG_WRAP);  // 允许文本换行
+        lv_obj_set_style_text_align(temp_label, LV_TEXT_ALIGN_CENTER, 0);  // 文本居中对齐
         lv_obj_center(temp_label);
         
         // 保存到全局静态变量，以便任务函数访问
@@ -992,23 +1010,10 @@ void SetupTab1() {
         // 立即执行一次获取天气信息
         fetch_weather();
         
-        // Create time display area with large font
-        lv_obj_t *time_container = lv_obj_create(tab2);
-        lv_obj_set_size(time_container, LV_HOR_RES * 0.8 - 40, 50 + 20);
-        lv_obj_align(time_container, LV_ALIGN_TOP_MID, 0, 100);  // Moved to middle position
-        lv_obj_set_style_radius(time_container, 10, 0);
-        lv_obj_set_style_bg_opa(time_container, LV_OPA_30, 0);
-        lv_obj_set_style_border_width(time_container, 0, 0);
-        
-        lv_obj_t *time_label = lv_label_create(time_container);
-        lv_obj_set_style_text_font(time_label, &time40 , 0); // Using larger font for time
-        lv_label_set_text(time_label, "00:00:00");
-        lv_obj_center(time_label);
-        
         // Create fortune message box at the bottom
         lv_obj_t *fortune_container = lv_obj_create(tab2);
-        lv_obj_set_size(fortune_container, LV_HOR_RES * 0.8 - 40, 80 + 20);
-        lv_obj_align(fortune_container, LV_ALIGN_BOTTOM_MID, 0, -30);
+        lv_obj_set_size(fortune_container, LV_HOR_RES * 0.8 - 40, 80);
+        lv_obj_align(fortune_container, LV_ALIGN_BOTTOM_MID, 0, -20);
         lv_obj_set_style_radius(fortune_container, 10, 0);
         lv_obj_set_style_bg_opa(fortune_container, LV_OPA_30, 0);
         lv_obj_set_style_border_width(fortune_container, 0, 0);
