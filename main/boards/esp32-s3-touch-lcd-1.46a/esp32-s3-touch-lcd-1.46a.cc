@@ -974,9 +974,9 @@ void SetupTab1() {
         
         // Create temperature display area - 放在顶部位置
         lv_obj_t *temp_container = lv_obj_create(tab2);
-        lv_obj_set_size(temp_container, LV_HOR_RES * 0.8 - 80, 80);
+        lv_obj_set_size(temp_container, LV_HOR_RES * 0.8 - 80, 60);  // 修改高度为60
         // 调整天气容器位置，放在时间标签上方10像素
-        lv_obj_align(temp_container, LV_ALIGN_BOTTOM_MID, 0, -20 - 80 - 10 - 60 - 10);  // 格言容器高度80，下边距20，间隔10，时间高度60，间隔10
+        lv_obj_align(temp_container, LV_ALIGN_BOTTOM_MID, 0, -20 - 60 - 10 - 60 - 10);  // 格言容器高度60，下边距20，间隔10，时间高度60，间隔10
         lv_obj_set_style_radius(temp_container, 10, 0);
         lv_obj_set_style_bg_opa(temp_container, LV_OPA_30, 0);
         lv_obj_set_style_border_width(temp_container, 0, 0);
@@ -1005,7 +1005,7 @@ void SetupTab1() {
         lv_obj_t *time_container = lv_obj_create(tab2);
         lv_obj_set_size(time_container, LV_HOR_RES * 0.8 - 80, 60);
         // 调整时间容器位置，放在格言标签上方10像素
-        lv_obj_align(time_container, LV_ALIGN_BOTTOM_MID, 0, -20 - 80 - 10);  // 格言容器高度80，下边距20，间隔10
+        lv_obj_align(time_container, LV_ALIGN_BOTTOM_MID, 0, -20 - 60 - 10);  // 格言容器高度60，下边距20，间隔10
         lv_obj_set_style_radius(time_container, 10, 0);
         lv_obj_set_style_bg_opa(time_container, LV_OPA_30, 0);
         lv_obj_set_style_border_width(time_container, 0, 0);
@@ -1020,7 +1020,7 @@ void SetupTab1() {
         
         // Create fortune message box at the bottom
         lv_obj_t *fortune_container = lv_obj_create(tab2);
-        lv_obj_set_size(fortune_container, LV_HOR_RES * 0.8 - 80, 80);
+        lv_obj_set_size(fortune_container, LV_HOR_RES * 0.8 - 80, 60);  // 修改高度为60
         lv_obj_align(fortune_container, LV_ALIGN_BOTTOM_MID, 0, -20);
         lv_obj_set_style_radius(fortune_container, 10, 0);
         lv_obj_set_style_bg_opa(fortune_container, LV_OPA_30, 0);
