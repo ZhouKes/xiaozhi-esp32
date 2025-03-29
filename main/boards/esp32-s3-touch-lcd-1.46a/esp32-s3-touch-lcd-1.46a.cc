@@ -975,10 +975,14 @@ void SetupTab1() {
         // Create temperature display area - 放在顶部位置
         lv_obj_t *temp_container = lv_obj_create(tab2);
         lv_obj_set_size(temp_container, LV_HOR_RES * 0.8 - 80, 80);
-        lv_obj_align(temp_container, LV_ALIGN_TOP_MID, 0, 30);  // 移动到顶部位置
+        // 调整天气容器位置，放在时间标签上方10像素
+        lv_obj_align(temp_container, LV_ALIGN_BOTTOM_MID, 0, -20 - 80 - 10 - 60 - 10);  // 格言容器高度80，下边距20，间隔10，时间高度60，间隔10
         lv_obj_set_style_radius(temp_container, 10, 0);
         lv_obj_set_style_bg_opa(temp_container, LV_OPA_30, 0);
         lv_obj_set_style_border_width(temp_container, 0, 0);
+        // 禁用滚动
+        lv_obj_clear_flag(temp_container, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_scrollbar_mode(temp_container, LV_SCROLLBAR_MODE_OFF);
         
         lv_obj_t *temp_label = lv_label_create(temp_container);
         lv_obj_set_style_text_font(temp_label, fonts_.text_font, 0);
@@ -1000,10 +1004,14 @@ void SetupTab1() {
         // Create time display area with large font - 放在中间位置
         lv_obj_t *time_container = lv_obj_create(tab2);
         lv_obj_set_size(time_container, LV_HOR_RES * 0.8 - 80, 60);
-        lv_obj_align(time_container, LV_ALIGN_TOP_MID, 0, 100);  // 移动到中间位置
+        // 调整时间容器位置，放在格言标签上方10像素
+        lv_obj_align(time_container, LV_ALIGN_BOTTOM_MID, 0, -20 - 80 - 10);  // 格言容器高度80，下边距20，间隔10
         lv_obj_set_style_radius(time_container, 10, 0);
         lv_obj_set_style_bg_opa(time_container, LV_OPA_30, 0);
         lv_obj_set_style_border_width(time_container, 0, 0);
+        // 禁用滚动
+        lv_obj_clear_flag(time_container, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_scrollbar_mode(time_container, LV_SCROLLBAR_MODE_OFF);
         
         lv_obj_t *time_label = lv_label_create(time_container);
         lv_obj_set_style_text_font(time_label, &time40 , 0); // Using larger font for time
@@ -1017,6 +1025,9 @@ void SetupTab1() {
         lv_obj_set_style_radius(fortune_container, 10, 0);
         lv_obj_set_style_bg_opa(fortune_container, LV_OPA_30, 0);
         lv_obj_set_style_border_width(fortune_container, 0, 0);
+        // 禁用滚动
+        lv_obj_clear_flag(fortune_container, LV_OBJ_FLAG_SCROLLABLE);
+        lv_obj_set_scrollbar_mode(fortune_container, LV_SCROLLBAR_MODE_OFF);
         
         lv_obj_t *fortune_label = lv_label_create(fortune_container);
         lv_obj_set_style_text_font(fortune_label, fonts_.text_font, 0);
