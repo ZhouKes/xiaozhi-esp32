@@ -430,8 +430,8 @@ void SetupTab1() {
     /* Create right-side toggle button */
     container_toggle_btn = lv_btn_create(tab1);
     lv_obj_set_size(container_toggle_btn, 60, 60);  // 50% larger (40->60)
-    // Position on the right middle of the container
-    lv_obj_align(container_toggle_btn, LV_ALIGN_RIGHT_MID, -2, 0);  // Moved 4 pixels to the right (from -10 to -6)
+    // 位置调整为垂直居中
+    lv_obj_align(container_toggle_btn, LV_ALIGN_RIGHT_MID, -2, 0);  // 右侧中间位置
     lv_obj_set_style_bg_opa(container_toggle_btn, LV_OPA_50, 0);    // Make semi-transparent
     lv_obj_set_style_radius(container_toggle_btn, 30, 0);           // Round corners (increased to match new size)
     
@@ -461,7 +461,8 @@ void SetupTab1() {
     /* Create background switch button */
     bg_switch_btn = lv_btn_create(tab1);
     lv_obj_set_size(bg_switch_btn, 60, 60);  // 50% larger (40->60)
-    lv_obj_set_pos(bg_switch_btn, 2, LV_VER_RES / 2 - 30);  // Moved 4 pixels to the left (from 10 to 6)
+    // 位置调整为垂直居中
+    lv_obj_align(bg_switch_btn, LV_ALIGN_LEFT_MID, 2, 0);  // 左侧中间位置
     lv_obj_set_style_bg_opa(bg_switch_btn, LV_OPA_30, 0);    // Make semi-transparent
     lv_obj_set_style_radius(bg_switch_btn, 30, 0);           // Round corners (increased to match new size)
     
@@ -1044,7 +1045,8 @@ void SetupTab1() {
         /* Create background switch button (left side) */
         lv_obj_t *bg_switch_btn2 = lv_btn_create(tab2);
         lv_obj_set_size(bg_switch_btn2, 60, 60);  // Same size as tab1 button
-        lv_obj_set_pos(bg_switch_btn2, 2, LV_VER_RES / 2 - 30);  // Same position as tab1 button
+        // 位置调整为垂直居中，与tab1的按钮Y轴位置一致
+        lv_obj_align(bg_switch_btn2, LV_ALIGN_LEFT_MID, 2, 0);  // 左侧中间位置
         lv_obj_set_style_bg_opa(bg_switch_btn2, LV_OPA_50, 0);    // Semi-transparent
         lv_obj_set_style_radius(bg_switch_btn2, 30, 0);           // Round corners
         
@@ -1073,7 +1075,8 @@ void SetupTab1() {
         /* Create return button (right side) */
         lv_obj_t *return_btn = lv_btn_create(tab2);
         lv_obj_set_size(return_btn, 60, 60);  // Same size as tab1 button
-        lv_obj_align(return_btn, LV_ALIGN_RIGHT_MID, -2, 0);  // Same position as tab1 button
+        // 位置调整为垂直居中，与tab1的按钮Y轴位置一致
+        lv_obj_align(return_btn, LV_ALIGN_RIGHT_MID, -2, 0);  // 右侧中间位置
         lv_obj_set_style_bg_opa(return_btn, LV_OPA_50, 0);    // Semi-transparent
         lv_obj_set_style_radius(return_btn, 30, 0);           // Round corners
         
