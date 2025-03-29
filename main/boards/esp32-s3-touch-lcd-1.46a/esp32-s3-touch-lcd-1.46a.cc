@@ -972,23 +972,10 @@ void SetupTab1() {
         /* Send to background */
         lv_obj_move_background(bg_img2);
         
-        // Create time display area with large font
-        lv_obj_t *time_container = lv_obj_create(tab2);
-        lv_obj_set_size(time_container, LV_HOR_RES * 0.8 - 40, 50 + 20);
-        lv_obj_align(time_container, LV_ALIGN_TOP_MID, 0, 30);  // 移动到顶部位置
-        lv_obj_set_style_radius(time_container, 10, 0);
-        lv_obj_set_style_bg_opa(time_container, LV_OPA_30, 0);
-        lv_obj_set_style_border_width(time_container, 0, 0);
-        
-        lv_obj_t *time_label = lv_label_create(time_container);
-        lv_obj_set_style_text_font(time_label, &time40 , 0); // Using larger font for time
-        lv_label_set_text(time_label, "00:00:00");
-        lv_obj_center(time_label);
-        
-        // Create temperature display area
+        // Create temperature display area - 放在顶部位置
         lv_obj_t *temp_container = lv_obj_create(tab2);
-        lv_obj_set_size(temp_container, LV_HOR_RES * 0.8 - 40 + 60, 40 + 20);  // 恢复原来的高度
-        lv_obj_align(temp_container, LV_ALIGN_TOP_MID, 0, 100);  // 移动到中间位置
+        lv_obj_set_size(temp_container, LV_HOR_RES * 0.8 - 80, 80);
+        lv_obj_align(temp_container, LV_ALIGN_TOP_MID, 0, 30);  // 移动到顶部位置
         lv_obj_set_style_radius(temp_container, 10, 0);
         lv_obj_set_style_bg_opa(temp_container, LV_OPA_30, 0);
         lv_obj_set_style_border_width(temp_container, 0, 0);
@@ -1010,9 +997,22 @@ void SetupTab1() {
         // 立即执行一次获取天气信息
         fetch_weather();
         
+        // Create time display area with large font - 放在中间位置
+        lv_obj_t *time_container = lv_obj_create(tab2);
+        lv_obj_set_size(time_container, LV_HOR_RES * 0.8 - 80, 60);
+        lv_obj_align(time_container, LV_ALIGN_TOP_MID, 0, 100);  // 移动到中间位置
+        lv_obj_set_style_radius(time_container, 10, 0);
+        lv_obj_set_style_bg_opa(time_container, LV_OPA_30, 0);
+        lv_obj_set_style_border_width(time_container, 0, 0);
+        
+        lv_obj_t *time_label = lv_label_create(time_container);
+        lv_obj_set_style_text_font(time_label, &time40 , 0); // Using larger font for time
+        lv_label_set_text(time_label, "00:00:00");
+        lv_obj_center(time_label);
+        
         // Create fortune message box at the bottom
         lv_obj_t *fortune_container = lv_obj_create(tab2);
-        lv_obj_set_size(fortune_container, LV_HOR_RES * 0.8 - 40, 80);
+        lv_obj_set_size(fortune_container, LV_HOR_RES * 0.8 - 80, 80);
         lv_obj_align(fortune_container, LV_ALIGN_BOTTOM_MID, 0, -20);
         lv_obj_set_style_radius(fortune_container, 10, 0);
         lv_obj_set_style_bg_opa(fortune_container, LV_OPA_30, 0);
