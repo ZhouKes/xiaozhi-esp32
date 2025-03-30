@@ -27,6 +27,10 @@
 #include "assets/lang_config.h"
 #include <esp_http_client.h>
 #include <cJSON.h>
+#include "power_manager.h"
+#include "power_save_timer.h"
+#include <esp_sleep.h>
+#include "button.h"
 #define TAG "waveshare_lcd_1_46a"
 
 LV_FONT_DECLARE(time40);
@@ -1422,10 +1426,45 @@ private:
     i2c_master_bus_handle_t i2c_bus_;
     esp_io_expander_handle_t io_expander = NULL;
     CustomLcdDisplay* display_;
-    button_handle_t boot_btn, pwr_btn;
-    
+    Button boot_btn, pwr_btn;
+    PowerManager* power_manager_;
+    PowerSaveTimer* power_save_timer_;
+    esp_lcd_panel_io_handle_t panel_io_ = nullptr;
+    esp_lcd_panel_handle_t panel_ = nullptr;
     // 触摸驱动
     SPD2010TouchDriver* touch_driver_ = nullptr;
+
+    void InitializePowerManager() {
+        power_manager_ = new PowerManager(GPIO_NUM_8);
+        power_manager_->OnChargingStatusChanged([this](bool is_charging) {  
+            if (is_charging) {
+                power_save_timer_->SetEnabled(false);
+            } else {
+                power_save_timer_->SetEnabled(true);
+            }
+        });
+    }
+
+    void InitializePowerSaveTimer() {
+        power_save_timer_ = new PowerSaveTimer(-1, 60, 300);
+        power_save_timer_->OnEnterSleepMode([this]() {
+            ESP_LOGI(TAG, "Enabling sleep mode");
+            display_->SetChatMessage("system", "");
+            display_->SetEmotion("sleepy");
+            GetBacklight()->SetBrightness(0);
+        });
+        power_save_timer_->OnExitSleepMode([this]() {
+            display_->SetChatMessage("system", "");
+            display_->SetEmotion("neutral");
+            GetBacklight()->RestoreBrightness();
+        });
+        power_save_timer_->OnShutdownRequest([this]() {
+            ESP_LOGI(TAG, "Shutting down");
+            esp_lcd_panel_disp_on_off(panel_, false); //关闭显示
+            esp_deep_sleep_start();
+        });
+        power_save_timer_->SetEnabled(true);
+    }
 
     void InitializeI2c() {
         i2c_master_bus_config_t i2c_bus_cfg = {
@@ -1467,13 +1506,13 @@ private:
     }
 
     void Initializespd2010Display() {
-        esp_lcd_panel_io_handle_t panel_io = nullptr;
-        esp_lcd_panel_handle_t panel = nullptr;
+        //esp_lcd_panel_io_handle_t panel_io = nullptr;
+        // esp_lcd_panel_handle_t panel = nullptr;
 
         ESP_LOGI(TAG, "Install panel IO");
         
         const esp_lcd_panel_io_spi_config_t io_config = SPD2010_PANEL_IO_QSPI_CONFIG(QSPI_PIN_NUM_LCD_CS, NULL, NULL);
-        ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)QSPI_LCD_HOST, &io_config, &panel_io));
+        ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi((esp_lcd_spi_bus_handle_t)QSPI_LCD_HOST, &io_config, &panel_io_));
 
         ESP_LOGI(TAG, "Install SPD2010 panel driver");
         
@@ -1488,14 +1527,14 @@ private:
             .bits_per_pixel = QSPI_LCD_BIT_PER_PIXEL,    
             .vendor_config = &vendor_config,
         };
-        ESP_ERROR_CHECK(esp_lcd_new_panel_spd2010(panel_io, &panel_config, &panel));
+        ESP_ERROR_CHECK(esp_lcd_new_panel_spd2010(panel_io_, &panel_config, &panel_));
 
-        esp_lcd_panel_reset(panel);
-        esp_lcd_panel_init(panel);
-        esp_lcd_panel_disp_on_off(panel, true);
-        esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY);
-        esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
-        display_ = new CustomLcdDisplay(panel_io, panel,
+        esp_lcd_panel_reset(panel_);
+        esp_lcd_panel_init(panel_);
+        esp_lcd_panel_disp_on_off(panel_, true);
+        esp_lcd_panel_swap_xy(panel_, DISPLAY_SWAP_XY);
+        esp_lcd_panel_mirror(panel_, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
+        display_ = new CustomLcdDisplay(panel_io_, panel_,
                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY);
     }
     
@@ -1535,6 +1574,31 @@ private:
         gpio_set_level(PWR_Control_PIN, true);
     }
     void InitializeButtons() {
+        boot_btn.OnClick([this]() {
+            power_save_timer_->WakeUp();
+            auto& app = Application::GetInstance();
+            if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
+                ResetWifiConfiguration();
+            }
+            app.ToggleChatState();
+        });
+
+        pwr_btn.OnClick([this]() {  
+            power_save_timer_->WakeUp();
+        });
+
+        pwr_btn.OnLongPress([this]() {  
+            if(GetBacklight()->brightness() > 0) {
+                GetBacklight()->SetBrightness(0);
+                gpio_set_level(PWR_Control_PIN, false);
+            }
+            else {
+                GetBacklight()->RestoreBrightness();
+                gpio_set_level(PWR_Control_PIN, true);
+            }
+        });
+#if 0
+
         InitializeButtonsCustom();
         button_config_t btns_config = {
             .type = BUTTON_TYPE_CUSTOM,
@@ -1552,6 +1616,7 @@ private:
         };
         boot_btn = iot_button_create(&btns_config);
         iot_button_register_cb(boot_btn, BUTTON_SINGLE_CLICK, [](void* button_handle, void* usr_data) {
+            power_save_timer_->WakeUp();
             auto self = static_cast<CustomBoard*>(usr_data);
             auto& app = Application::GetInstance();
             if (app.GetDeviceState() == kDeviceStateStarting && !WifiStation::GetInstance().IsConnected()) {
@@ -1568,6 +1633,7 @@ private:
         };
         pwr_btn = iot_button_create(&btns_config);
         iot_button_register_cb(pwr_btn, BUTTON_SINGLE_CLICK, [](void* button_handle, void* usr_data) {
+            power_save_timer_->WakeUp();
         }, this);
         iot_button_register_cb(pwr_btn, BUTTON_LONG_PRESS_START, [](void* button_handle, void* usr_data) {
             auto self = static_cast<CustomBoard*>(usr_data);
@@ -1580,6 +1646,7 @@ private:
                 gpio_set_level(PWR_Control_PIN, true);
             }
         }, this);
+#endif
     }
 
     void InitializeIot() {
@@ -1589,9 +1656,11 @@ private:
     }
 
 public:
-    CustomBoard() { 
+    CustomBoard() : boot_btn(BOOT_BUTTON_GPIO), pwr_btn(PWR_BUTTON_GPIO) { 
         InitializeI2c();
         InitializeTca9554();
+        InitializePowerManager();
+        InitializePowerSaveTimer();
         InitializeSpi();
         Initializespd2010Display();
         InitializeTouch();
@@ -1614,6 +1683,25 @@ public:
     virtual Backlight* GetBacklight() override {
         static PwmBacklight backlight(DISPLAY_BACKLIGHT_PIN, DISPLAY_BACKLIGHT_OUTPUT_INVERT);
         return &backlight;
+    }
+
+    virtual bool GetBatteryLevel(int& level, bool& charging, bool& discharging) override {
+        static bool last_discharging = false;
+        charging = power_manager_->IsCharging();
+        discharging = power_manager_->IsDischarging();
+        if (discharging != last_discharging) {
+            power_save_timer_->SetEnabled(discharging);
+            last_discharging = discharging;
+        }
+        level = power_manager_->GetBatteryLevel();
+        return true;
+    }
+
+    virtual void SetPowerSaveMode(bool enabled) override {
+        if (!enabled) {
+            power_save_timer_->WakeUp();
+        }
+        WifiBoard::SetPowerSaveMode(enabled);
     }
 
     ~CustomBoard() {
