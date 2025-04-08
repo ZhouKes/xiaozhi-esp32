@@ -105,6 +105,7 @@ LV_IMG_DECLARE(bg1);
 LV_IMG_DECLARE(bg2);
 LV_IMG_DECLARE(bg3);
 LV_IMG_DECLARE(bg4);
+LV_IMG_DECLARE(min);
 // Current theme - initialize based on default config
 static ThemeColors current_theme = LIGHT_THEME;
 
@@ -338,6 +339,7 @@ public:
     lv_obj_t * tab2 = nullptr;
     lv_obj_t * bg_img = nullptr;  // Background image object
     lv_obj_t * bg_img2 = nullptr;  // Background image object
+    lv_obj_t * emotion_gif = nullptr;
     uint8_t bg_index = 1;         // Current background index (1-4)
     lv_obj_t * bg_switch_btn = nullptr;  // Button to switch backgrounds
     lv_obj_t * container_toggle_btn = nullptr;  // Button to toggle container visibility
@@ -417,6 +419,14 @@ void SetupTab1() {
     
     /* Send to background */
     lv_obj_move_background(bg_img);
+
+    emotion_gif = lv_gif_create(tab1);
+    int gif_size = LV_HOR_RES;
+    lv_obj_set_size(emotion_gif, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_border_width(emotion_gif, 0, 0);
+    lv_obj_set_style_bg_opa(emotion_gif, LV_OPA_TRANSP, 0);
+    lv_obj_set_pos(emotion_gif, -16, -16);
+    lv_gif_set_src(emotion_gif, &min);
     
     /* Container */
     container_ = lv_obj_create(tab1);
