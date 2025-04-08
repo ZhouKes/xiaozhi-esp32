@@ -1470,8 +1470,9 @@ private:
         });
         power_save_timer_->OnShutdownRequest([this]() {
             ESP_LOGI(TAG, "Shutting down");
-            esp_lcd_panel_disp_on_off(panel_, false); //关闭显示
-            esp_deep_sleep_start();
+            //esp_lcd_panel_disp_on_off(panel_, false); //关闭显示
+            GetBacklight()->SetBrightness(0);
+            //esp_deep_sleep_start();
         });
         power_save_timer_->SetEnabled(true);
     }
