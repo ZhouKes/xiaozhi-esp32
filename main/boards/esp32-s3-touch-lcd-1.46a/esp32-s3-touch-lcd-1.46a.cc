@@ -1585,6 +1585,8 @@ private:
         gpio_set_level(PWR_Control_PIN, true);
     }
     void InitializeButtons() {
+        InitializeButtonsCustom();
+
         boot_btn.OnClick([this]() {
             power_save_timer_->WakeUp();
             auto& app = Application::GetInstance();
