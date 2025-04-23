@@ -15,6 +15,11 @@
 #include <driver/spi_common.h>
 #include <wifi_station.h>
 
+#ifndef LCD_TYPE_ILI9341_SERIAL
+#include <esp_lcd_touch_cst816s.h>
+#include "esp_lvgl_port.h"
+#include "lvgl.h"
+#endif
 #define TAG "esp32s3_korvo2_v3"
 
 LV_FONT_DECLARE(font_puhui_20_4);
@@ -225,6 +230,43 @@ private:
                                      });
     }
 
+#ifndef LCD_TYPE_ILI9341_SERIAL
+    void InitializeTouch()
+    {
+        esp_lcd_touch_handle_t tp;
+        esp_lcd_touch_config_t tp_cfg = {
+            .x_max = DISPLAY_WIDTH,
+            .y_max = DISPLAY_HEIGHT,
+            .rst_gpio_num = GPIO_NUM_NC, // Shared with LCD reset
+            .int_gpio_num = GPIO_NUM_NC, 
+            .levels = {
+                .reset = 0,
+                .interrupt = 0,
+            },
+            .flags = {
+                .swap_xy = 1,
+                .mirror_x = 0,
+                .mirror_y = 1,
+            },
+        };
+        esp_lcd_panel_io_handle_t tp_io_handle = NULL;
+        esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_CST816S_CONFIG();
+        tp_io_config.scl_speed_hz = 400000;
+
+        esp_lcd_new_panel_io_i2c(i2c_bus_, &tp_io_config, &tp_io_handle);
+        esp_lcd_touch_new_i2c_cst816s(tp_io_handle, &tp_cfg, &tp);
+        assert(tp);
+
+        /* Add touch input (for selected screen) */
+        const lvgl_port_touch_cfg_t touch_cfg = {
+            .disp = lv_display_get_default(), 
+            .handle = tp,
+        };
+
+        lvgl_port_add_touch(&touch_cfg);
+    }
+#endif
+
     // 物联网初始化，添加对 AI 可见设备
     void InitializeIot() {
         auto& thing_manager = iot::ThingManager::GetInstance();
@@ -244,6 +286,7 @@ public:
         InitializeIli9341Display(); 
         #else
         InitializeSt7789Display(); 
+        InitializeTouch();
         #endif
         InitializeIot();
     }
