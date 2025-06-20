@@ -66,6 +66,7 @@ const ThemeColors LIGHT_THEME = {
 
 
 LV_FONT_DECLARE(font_awesome_30_4);
+LV_IMAGE_DECLARE(chat_bg);
 
 LcdDisplay::LcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_handle_t panel, DisplayFonts fonts, int width, int height)
     : panel_io_(panel_io), panel_(panel), fonts_(fonts) {
@@ -312,6 +313,10 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_text_color(screen, current_theme_.text, 0);
     lv_obj_set_style_bg_color(screen, current_theme_.background, 0);
 
+    lv_obj_t* chat_bg_obj = lv_img_create(screen);
+    lv_img_set_src(chat_bg_obj, &chat_bg);
+    lv_obj_align(chat_bg_obj, LV_ALIGN_TOP_LEFT, 0, 0); 
+
     /* Container */
     container_ = lv_obj_create(screen);
     lv_obj_set_size(container_, LV_HOR_RES, LV_VER_RES);
@@ -320,6 +325,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_border_width(container_, 0, 0);
     lv_obj_set_style_pad_row(container_, 0, 0);
     lv_obj_set_style_bg_color(container_, current_theme_.background, 0);
+    lv_obj_set_style_bg_opa(container_, LV_OPA_TRANSP, 0);
     lv_obj_set_style_border_color(container_, current_theme_.border, 0);
 
     /* Status bar */
@@ -328,6 +334,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_radius(status_bar_, 0, 0);
     lv_obj_set_style_bg_color(status_bar_, current_theme_.background, 0);
     lv_obj_set_style_text_color(status_bar_, current_theme_.text, 0);
+    lv_obj_set_style_bg_opa(status_bar_, LV_OPA_50, 0);
     
     /* Content - Chat area */
     content_ = lv_obj_create(container_);
@@ -337,6 +344,7 @@ void LcdDisplay::SetupUI() {
     lv_obj_set_style_pad_all(content_, 10, 0);
     lv_obj_set_style_bg_color(content_, current_theme_.chat_background, 0); // Background for chat area
     lv_obj_set_style_border_color(content_, current_theme_.border, 0); // Border color for chat area
+    lv_obj_set_style_bg_opa(content_, LV_OPA_TRANSP, 0);
 
     // Enable scrolling for chat content
     lv_obj_set_scrollbar_mode(content_, LV_SCROLLBAR_MODE_OFF);
@@ -467,6 +475,7 @@ void LcdDisplay::SetChatMessage(const char* role, const char* content) {
     lv_obj_set_style_border_width(msg_bubble, 1, 0);
     lv_obj_set_style_border_color(msg_bubble, current_theme_.border, 0);
     lv_obj_set_style_pad_all(msg_bubble, 8, 0);
+    lv_obj_set_style_bg_opa(msg_bubble, LV_OPA_50, 0);
 
     // Create the message text
     lv_obj_t* msg_text = lv_label_create(msg_bubble);
