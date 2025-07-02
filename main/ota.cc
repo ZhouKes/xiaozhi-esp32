@@ -71,9 +71,30 @@ Http* Ota::SetupHttp() {
 获取设备限制信息
 example：https://ai.zkszkj.com/addons/shopro/device.device_exter/getAccessrestrictions?macAddress=00:e0:4c:16:c5:a9
 
-返回数据：{"code":1,"msg":"访问限制查询成功","time":"1751427888","data":{"is_restricted":false}}
+返回数据： {"is_restricted":false}
 取is_restricted字段，如果为true，则表示设备被限制，需要提示用户
 */
+//重新构造header，因为限制接口不需要这些参数
+Http* Ota::SetupHttpRestrictions() {
+    auto& board = Board::GetInstance();
+    auto app_desc = esp_app_get_description();
+
+    auto http = board.CreateHttp();
+    /*
+    http->SetHeader("Activation-Version", has_serial_number_ ? "2" : "1");
+    http->SetHeader("Device-Id", SystemInfo::GetMacAddress().c_str());
+    http->SetHeader("Client-Id", board.GetUuid());
+    if (has_serial_number_) {
+        http->SetHeader("Serial-Number", serial_number_.c_str());
+    }
+    */
+    http->SetHeader("User-Agent", std::string(BOARD_NAME "/") + app_desc->version);
+    http->SetHeader("Accept-Language", Lang::CODE);
+    //http->SetHeader("Content-Type", "text/plain");
+
+    return http;
+}
+
 bool Ota::CheckDeviceRestrictions() {
 
     auto& board = Board::GetInstance();
@@ -82,7 +103,7 @@ bool Ota::CheckDeviceRestrictions() {
     
     ESP_LOGI(TAG, "Checking device restrictions for MAC: %s", mac_address.c_str());
     
-    auto http = std::unique_ptr<Http>(SetupHttp());
+    auto http = std::unique_ptr<Http>(SetupHttpRestrictions());
     if (!http->Open("GET", url)) {
         ESP_LOGE(TAG, "Failed to open HTTP connection to Restrictions server");
         return false;
@@ -105,26 +126,9 @@ bool Ota::CheckDeviceRestrictions() {
         ESP_LOGE(TAG, "Failed to parse device restrictions JSON response");
         return false;
     }
-    
-    // Check if response code is success (1)
-    cJSON *code = cJSON_GetObjectItem(root, "code");
-    if (!cJSON_IsNumber(code) || code->valueint != 1) {
-        ESP_LOGE(TAG, "Device restrictions check failed, server returned error code: %d", 
-                 cJSON_IsNumber(code) ? code->valueint : -1);
-        cJSON_Delete(root);
-        return false;
-    }
-    
-    // Get data object
-    cJSON *data_obj = cJSON_GetObjectItem(root, "data");
-    if (!cJSON_IsObject(data_obj)) {
-        ESP_LOGE(TAG, "No data object found in device restrictions response");
-        cJSON_Delete(root);
-        return false;
-    }
-    
+ 
     // Check is_restricted field
-    cJSON *is_restricted = cJSON_GetObjectItem(data_obj, "is_restricted");
+    cJSON *is_restricted = cJSON_GetObjectItem(root, "is_restricted");
     if (!cJSON_IsBool(is_restricted)) {
         ESP_LOGE(TAG, "is_restricted field not found or not boolean");
         cJSON_Delete(root);

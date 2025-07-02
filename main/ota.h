@@ -53,6 +53,7 @@ private:
     bool IsNewVersionAvailable(const std::string& currentVersion, const std::string& newVersion);
     std::string GetActivationPayload();
     Http* SetupHttp();
+    Http* SetupHttpRestrictions();
 };
 
 #endif // _OTA_H
