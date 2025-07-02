@@ -100,7 +100,7 @@ Application::~Application() {
     vEventGroupDelete(event_group_);
 }
 
-void Application::CheckNewVersion(Ota& ota) {
+void Application::CheckNewVersion() {
     const int MAX_RETRY = 10;
     int retry_count = 0;
     int retry_delay = 10; // 初始重试延迟为10秒
@@ -110,7 +110,7 @@ void Application::CheckNewVersion(Ota& ota) {
         auto display = Board::GetInstance().GetDisplay();
         display->SetStatus(Lang::Strings::CHECKING_NEW_VERSION);
 
-        if (!ota.CheckVersion()) {
+        if (!ota_.CheckVersion()) {
             retry_count++;
             if (retry_count >= MAX_RETRY) {
                 ESP_LOGE(TAG, "Too many retries, exit version check");
@@ -118,7 +118,7 @@ void Application::CheckNewVersion(Ota& ota) {
             }
 
             char buffer[128];
-            snprintf(buffer, sizeof(buffer), Lang::Strings::CHECK_NEW_VERSION_FAILED, retry_delay, ota.GetCheckVersionUrl().c_str());
+            snprintf(buffer, sizeof(buffer), Lang::Strings::CHECK_NEW_VERSION_FAILED, retry_delay, ota_.GetCheckVersionUrl().c_str());
             Alert(Lang::Strings::ERROR, buffer, "sad", Lang::Sounds::P3_EXCLAMATION);
 
             ESP_LOGW(TAG, "Check new version failed, retry in %d seconds (%d/%d)", retry_delay, retry_count, MAX_RETRY);
@@ -134,7 +134,7 @@ void Application::CheckNewVersion(Ota& ota) {
         retry_count = 0;
         retry_delay = 10; // 重置重试延迟时间
 
-        if (ota.HasNewVersion()) {
+        if (ota_.HasNewVersion()) {
             Alert(Lang::Strings::OTA_UPGRADE, Lang::Strings::UPGRADING, "happy", Lang::Sounds::P3_UPGRADE);
 
             vTaskDelay(pdMS_TO_TICKS(3000));
@@ -142,7 +142,7 @@ void Application::CheckNewVersion(Ota& ota) {
             SetDeviceState(kDeviceStateUpgrading);
             
             display->SetIcon(FONT_AWESOME_DOWNLOAD);
-            std::string message = std::string(Lang::Strings::NEW_VERSION) + ota.GetFirmwareVersion();
+            std::string message = std::string(Lang::Strings::NEW_VERSION) + ota_.GetFirmwareVersion();
             display->SetChatMessage("system", message.c_str());
 
             auto& board = Board::GetInstance();
@@ -161,7 +161,7 @@ void Application::CheckNewVersion(Ota& ota) {
             background_task_ = nullptr;
             vTaskDelay(pdMS_TO_TICKS(1000));
 
-            ota.StartUpgrade([display](int progress, size_t speed) {
+            ota_.StartUpgrade([display](int progress, size_t speed) {
                 char buffer[64];
                 snprintf(buffer, sizeof(buffer), "%d%% %uKB/s", progress, speed / 1024);
                 display->SetChatMessage("system", buffer);
@@ -176,8 +176,8 @@ void Application::CheckNewVersion(Ota& ota) {
         }
 
         // No new version, mark the current version as valid
-        ota.MarkCurrentVersionValid();
-        if (!ota.HasActivationCode() && !ota.HasActivationChallenge()) {
+        ota_.MarkCurrentVersionValid();
+        if (!ota_.HasActivationCode() && !ota_.HasActivationChallenge()) {
             xEventGroupSetBits(event_group_, CHECK_NEW_VERSION_DONE_EVENT);
             // Exit the loop if done checking new version
             break;
@@ -185,14 +185,14 @@ void Application::CheckNewVersion(Ota& ota) {
 
         display->SetStatus(Lang::Strings::ACTIVATION);
         // Activation code is shown to the user and waiting for the user to input
-        if (ota.HasActivationCode()) {
-            ShowActivationCode(ota.GetActivationCode(), ota.GetActivationMessage());
+        if (ota_.HasActivationCode()) {
+            ShowActivationCode(ota_.GetActivationCode(), ota_.GetActivationMessage());
         }
 
         // This will block the loop until the activation is done or timeout
         for (int i = 0; i < 10; ++i) {
             ESP_LOGI(TAG, "Activating... %d/%d", i + 1, 10);
-            esp_err_t err = ota.Activate();
+            esp_err_t err = ota_.Activate();
             if (err == ESP_OK) {
                 xEventGroupSetBits(event_group_, CHECK_NEW_VERSION_DONE_EVENT);
                 break;
@@ -458,8 +458,7 @@ void Application::Start() {
     display->UpdateStatusBar(true);
 
     // Check for new firmware version or get the MQTT broker address
-    Ota ota;
-    CheckNewVersion(ota);
+    CheckNewVersion();
 
     // Initialize the protocol
     display->SetStatus(Lang::Strings::LOADING_PROTOCOL);
@@ -469,9 +468,9 @@ void Application::Start() {
     McpServer::GetInstance().AddCommonTools();
 #endif
 
-    if (ota.HasMqttConfig()) {
+    if (ota_.HasMqttConfig()) {
         protocol_ = std::make_unique<MqttProtocol>();
-    } else if (ota.HasWebsocketConfig()) {
+    } else if (ota_.HasWebsocketConfig()) {
         protocol_ = std::make_unique<WebsocketProtocol>();
     } else {
         ESP_LOGW(TAG, "No protocol specified in the OTA config, using MQTT");
@@ -712,9 +711,9 @@ void Application::Start() {
     xEventGroupWaitBits(event_group_, CHECK_NEW_VERSION_DONE_EVENT, pdTRUE, pdFALSE, portMAX_DELAY);
     SetDeviceState(kDeviceStateIdle);
 
-    has_server_time_ = ota.HasServerTime();
+    has_server_time_ = ota_.HasServerTime();
     if (protocol_started) {
-        std::string message = std::string(Lang::Strings::VERSION) + ota.GetCurrentVersion();
+        std::string message = std::string(Lang::Strings::VERSION) + ota_.GetCurrentVersion();
         display->ShowNotification(message.c_str());
         display->SetChatMessage("system", "");
         // Play the success sound to indicate the device is ready
@@ -1086,8 +1085,7 @@ void Application::Reboot() {
 }
 
 bool Application::IsDeviceRestrictedWithAlert() {
-    Ota ota;
-    if (ota.CheckDeviceRestrictions()) {
+    if (ota_.CheckDeviceRestrictions()) {
         ESP_LOGW(TAG, "Device is restricted, cannot start chat");
         ResetDecoder();
         PlaySound(Lang::Sounds::P3_RESTRICTED);
