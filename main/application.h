@@ -139,6 +139,7 @@ private:
     void AudioLoop();
     void EnterAudioTestingMode();
     void ExitAudioTestingMode();
+    bool IsDeviceRestrictedWithAlert();
 };
 
 #endif // _APPLICATION_H_

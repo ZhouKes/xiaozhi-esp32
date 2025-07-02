@@ -18,7 +18,7 @@
 #include <vector>
 #include <sstream>
 #include <algorithm>
-
+#define SERVER_B_URL "https://ai.zkszkj.com/addons/shopro/device.device_exter/otaXiaozhi"
 #define TAG "Ota"
 
 
@@ -67,6 +67,82 @@ Http* Ota::SetupHttp() {
     return http;
 }
 
+/*
+获取设备限制信息
+example：https://ai.zkszkj.com/addons/shopro/device.device_exter/getAccessrestrictions?macAddress=00:e0:4c:16:c5:a9
+
+返回数据：{"code":1,"msg":"访问限制查询成功","time":"1751427888","data":{"is_restricted":false}}
+取is_restricted字段，如果为true，则表示设备被限制，需要提示用户
+*/
+bool Ota::CheckDeviceRestrictions() {
+
+    auto& board = Board::GetInstance();
+    auto mac_address = SystemInfo::GetMacAddress();
+    auto url = "https://ai.zkszkj.com/addons/shopro/device.device_exter/getAccessrestrictions?macAddress=" + mac_address;
+    
+    ESP_LOGI(TAG, "Checking device restrictions for MAC: %s", mac_address.c_str());
+    
+    auto http = std::unique_ptr<Http>(SetupHttp());
+    if (!http->Open("GET", url)) {
+        ESP_LOGE(TAG, "Failed to open HTTP connection to Restrictions server");
+        return false;
+    }
+    
+    auto status_code = http->GetStatusCode();
+    if (status_code != 200) {
+        ESP_LOGE(TAG, "Failed to check device restrictions, status code: %d", status_code);
+        return false;
+    }
+    
+    std::string data = http->ReadAll();
+    http->Close();
+    
+    ESP_LOGI(TAG, "Device restrictions response: %s", data.c_str());
+    
+    // Parse JSON response
+    cJSON *root = cJSON_Parse(data.c_str());
+    if (root == NULL) {
+        ESP_LOGE(TAG, "Failed to parse device restrictions JSON response");
+        return false;
+    }
+    
+    // Check if response code is success (1)
+    cJSON *code = cJSON_GetObjectItem(root, "code");
+    if (!cJSON_IsNumber(code) || code->valueint != 1) {
+        ESP_LOGE(TAG, "Device restrictions check failed, server returned error code: %d", 
+                 cJSON_IsNumber(code) ? code->valueint : -1);
+        cJSON_Delete(root);
+        return false;
+    }
+    
+    // Get data object
+    cJSON *data_obj = cJSON_GetObjectItem(root, "data");
+    if (!cJSON_IsObject(data_obj)) {
+        ESP_LOGE(TAG, "No data object found in device restrictions response");
+        cJSON_Delete(root);
+        return false;
+    }
+    
+    // Check is_restricted field
+    cJSON *is_restricted = cJSON_GetObjectItem(data_obj, "is_restricted");
+    if (!cJSON_IsBool(is_restricted)) {
+        ESP_LOGE(TAG, "is_restricted field not found or not boolean");
+        cJSON_Delete(root);
+        return false;
+    }
+    
+    bool restricted = cJSON_IsTrue(is_restricted);
+    if (restricted) {
+        ESP_LOGW(TAG, "Device is restricted, access denied");
+    } else {
+        ESP_LOGI(TAG, "Device is not restricted, access allowed");
+    }
+    
+    cJSON_Delete(root);
+    
+    return restricted;
+}
+
 /* 
  * Specification: https://ccnphfhqs21z.feishu.cn/wiki/FjW6wZmisimNBBkov6OcmfvknVd
  */
@@ -78,26 +154,91 @@ bool Ota::CheckVersion() {
     current_version_ = app_desc->version;
     ESP_LOGI(TAG, "Current version: %s", current_version_.c_str());
 
+    // First request: Get version info from SERVER_B_URL
+    std::string server_b_url = SERVER_B_URL;
+    ESP_LOGI(TAG, "Checking version from server B: %s", server_b_url.c_str());
+
+    auto http_server_b = std::unique_ptr<Http>(SetupHttp());
+    std::string data = board.GetJson();
+    std::string method = data.length() > 0 ? "POST" : "GET";
+    http_server_b->SetContent(std::move(data));
+
+    if (!http_server_b->Open(method, server_b_url)) {
+        ESP_LOGE(TAG, "Failed to open HTTP connection to server B");
+        return false;
+    }
+
+    auto status_code = http_server_b->GetStatusCode();
+    if (status_code != 200) {
+        ESP_LOGE(TAG, "Failed to check version from server B, status code: %d", status_code);
+        return false;
+    }
+
+    std::string server_b_data = http_server_b->ReadAll();
+    http_server_b->Close();
+
+    // Parse version info from server B response
+    ESP_LOGI(TAG, "Server B response: %s", server_b_data.c_str());
+    cJSON *server_b_root = cJSON_Parse(server_b_data.c_str());
+    if (server_b_root == NULL) {
+        ESP_LOGE(TAG, "Failed to parse JSON response from server B");
+        return false;
+    }
+
+    has_new_version_ = false;
+    cJSON *firmware = cJSON_GetObjectItem(server_b_root, "firmware");
+    if (cJSON_IsObject(firmware)) {
+        cJSON *version = cJSON_GetObjectItem(firmware, "version");
+        if (cJSON_IsString(version)) {
+            firmware_version_ = version->valuestring;
+        }
+        cJSON *url = cJSON_GetObjectItem(firmware, "url");
+        if (cJSON_IsString(url)) {
+            firmware_url_ = url->valuestring;
+        }
+
+        if (cJSON_IsString(version) && cJSON_IsString(url)) {
+            ESP_LOGI(TAG, "Version On Server B: %s", firmware_version_.c_str());
+            // Check if the version is newer, for example, 0.1.0 is newer than 0.0.1
+            has_new_version_ = IsNewVersionAvailable(current_version_, firmware_version_);
+            if (has_new_version_) {
+                ESP_LOGI(TAG, "New version available: %s", firmware_version_.c_str());
+            } else {
+                ESP_LOGI(TAG, "Current is the latest version");
+            }
+            // If the force flag is set to 1, the given version is forced to be installed
+            cJSON *force = cJSON_GetObjectItem(firmware, "force");
+            if (cJSON_IsNumber(force) && force->valueint == 1) {
+                has_new_version_ = true;
+            }
+        }
+    } else {
+        ESP_LOGW(TAG, "No firmware section found in server B response!");
+    }
+    cJSON_Delete(server_b_root);
+
+    // Second request: Get other configs from main URL (ignore version info)
     std::string url = GetCheckVersionUrl();
     if (url.length() < 10) {
         ESP_LOGE(TAG, "Check version URL is not properly set");
         return false;
     }
 
+    ESP_LOGI(TAG, "Getting configs from main server: %s", url.c_str());
     auto http = std::unique_ptr<Http>(SetupHttp());
 
-    std::string data = board.GetJson();
-    std::string method = data.length() > 0 ? "POST" : "GET";
+    data = board.GetJson();
+    method = data.length() > 0 ? "POST" : "GET";
     http->SetContent(std::move(data));
 
     if (!http->Open(method, url)) {
-        ESP_LOGE(TAG, "Failed to open HTTP connection");
+        ESP_LOGE(TAG, "Failed to open HTTP connection to main server");
         return false;
     }
 
-    auto status_code = http->GetStatusCode();
+    status_code = http->GetStatusCode();
     if (status_code != 200) {
-        ESP_LOGE(TAG, "Failed to check version, status code: %d", status_code);
+        ESP_LOGE(TAG, "Failed to get configs from main server, status code: %d", status_code);
         return false;
     }
 
@@ -205,35 +346,7 @@ bool Ota::CheckVersion() {
         ESP_LOGW(TAG, "No server_time section found!");
     }
 
-    has_new_version_ = false;
-    cJSON *firmware = cJSON_GetObjectItem(root, "firmware");
-    if (cJSON_IsObject(firmware)) {
-        cJSON *version = cJSON_GetObjectItem(firmware, "version");
-        if (cJSON_IsString(version)) {
-            firmware_version_ = version->valuestring;
-        }
-        cJSON *url = cJSON_GetObjectItem(firmware, "url");
-        if (cJSON_IsString(url)) {
-            firmware_url_ = url->valuestring;
-        }
-
-        if (cJSON_IsString(version) && cJSON_IsString(url)) {
-            // Check if the version is newer, for example, 0.1.0 is newer than 0.0.1
-            has_new_version_ = IsNewVersionAvailable(current_version_, firmware_version_);
-            if (has_new_version_) {
-                ESP_LOGI(TAG, "New version available: %s", firmware_version_.c_str());
-            } else {
-                ESP_LOGI(TAG, "Current is the latest version");
-            }
-            // If the force flag is set to 1, the given version is forced to be installed
-            cJSON *force = cJSON_GetObjectItem(firmware, "force");
-            if (cJSON_IsNumber(force) && force->valueint == 1) {
-                has_new_version_ = true;
-            }
-        }
-    } else {
-        ESP_LOGW(TAG, "No firmware section found!");
-    }
+    // Ignore firmware section from main server (version info already obtained from server B)
 
     cJSON_Delete(root);
     return true;

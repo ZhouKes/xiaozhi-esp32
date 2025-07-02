@@ -33,6 +33,8 @@
 #define VOLUME_UP_BUTTON_GPIO   GPIO_NUM_40
 #define VOLUME_DOWN_BUTTON_GPIO GPIO_NUM_39
 
+//如果要使用屏幕，请取消下面代码的注释
+/*
 #define DISPLAY_SDA_PIN GPIO_NUM_41
 #define DISPLAY_SCL_PIN GPIO_NUM_42
 #define DISPLAY_WIDTH   128
@@ -47,6 +49,7 @@
 
 #define DISPLAY_MIRROR_X true
 #define DISPLAY_MIRROR_Y true
+*/
 
 
 #define ML307_RX_PIN GPIO_NUM_11

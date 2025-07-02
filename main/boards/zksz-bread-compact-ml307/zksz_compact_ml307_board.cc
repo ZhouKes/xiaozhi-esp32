@@ -32,7 +32,8 @@ private:
     Button touch_button_;
     Button volume_up_button_;
     Button volume_down_button_;
-
+//如果要使用屏幕，请取消下面代码的注释
+/*
     void InitializeDisplayI2c() {
         i2c_master_bus_config_t bus_config = {
             .i2c_port = (i2c_port_t)0,
@@ -96,6 +97,7 @@ private:
         display_ = new OledDisplay(panel_io_, panel_, DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y,
             {&font_puhui_14_1, &font_awesome_14_1});
     }
+*/
     PowerSaveTimer* power_save_timer_;
 
     void InitializeGpio() {
@@ -185,9 +187,9 @@ public:
         touch_button_(TOUCH_BUTTON_GPIO),
         volume_up_button_(VOLUME_UP_BUTTON_GPIO),
         volume_down_button_(VOLUME_DOWN_BUTTON_GPIO) {
-
-        InitializeDisplayI2c();
-        InitializeSsd1306Display();
+        //如果要使用屏幕，请取消下面代码的注释
+        //InitializeDisplayI2c();
+        //InitializeSsd1306Display();
         InitializeButtons();
         InitializeGpio();
         InitializeIot();
@@ -209,10 +211,11 @@ public:
 #endif
         return &audio_codec;
     }
-
+//如果要使用屏幕，请取消下面代码的注释
+/*
     virtual Display* GetDisplay() override {
         return display_;
     }
+*/
 };
-
 DECLARE_BOARD(CompactMl307BoardZksz);

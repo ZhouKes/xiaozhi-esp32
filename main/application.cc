@@ -321,6 +321,10 @@ void Application::ToggleChatState() {
     }
 
     if (device_state_ == kDeviceStateIdle) {
+        if (IsDeviceRestrictedWithAlert()) {
+            return;
+        }
+        
         Schedule([this]() {
             if (!protocol_->IsAudioChannelOpened()) {
                 SetDeviceState(kDeviceStateConnecting);
@@ -663,6 +667,11 @@ void Application::Start() {
             }
 
             if (device_state_ == kDeviceStateIdle) {
+                if (IsDeviceRestrictedWithAlert()) {
+                    wake_word_->StartDetection();
+                    return;
+                }
+
                 wake_word_->EncodeWakeWordData();
 
                 if (!protocol_->IsAudioChannelOpened()) {
@@ -1074,6 +1083,17 @@ void Application::UpdateIotStates() {
 void Application::Reboot() {
     ESP_LOGI(TAG, "Rebooting...");
     esp_restart();
+}
+
+bool Application::IsDeviceRestrictedWithAlert() {
+    Ota ota;
+    if (ota.CheckDeviceRestrictions()) {
+        ESP_LOGW(TAG, "Device is restricted, cannot start chat");
+        ResetDecoder();
+        PlaySound(Lang::Sounds::P3_RESTRICTED);
+        return true;
+    }
+    return false;
 }
 
 void Application::WakeWordInvoke(const std::string& wake_word) {

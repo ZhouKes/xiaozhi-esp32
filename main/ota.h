@@ -28,6 +28,7 @@ public:
     const std::string& GetActivationMessage() const { return activation_message_; }
     const std::string& GetActivationCode() const { return activation_code_; }
     std::string GetCheckVersionUrl();
+    bool CheckDeviceRestrictions();
 
 private:
     std::string activation_message_;
