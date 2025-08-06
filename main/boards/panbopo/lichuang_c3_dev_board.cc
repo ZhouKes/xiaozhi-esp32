@@ -756,7 +756,7 @@ public:
             AUDIO_CODEC_PA_PIN,
             AUDIO_CODEC_ES8311_ADDR,
             true,
-            false
+            true
             );
         return &audio_codec;
     }

@@ -37,7 +37,7 @@
 #define LIGHT_BORDER_COLOR           lv_color_hex(0xE0E0E0)     // Light gray border
 #define LIGHT_LOW_BATTERY_COLOR      lv_color_black()           // Black for light mode
 
-
+LV_IMG_DECLARE(neutral);
 // Define dark theme colors
 const ThemeColors DARK_THEME = {
     .background = DARK_BACKGROUND_COLOR,
@@ -740,6 +740,17 @@ void LcdDisplay::SetupUI() {
 
     lv_obj_set_flex_flow(content_, LV_FLEX_FLOW_COLUMN); // 垂直布局（从上到下）
     lv_obj_set_flex_align(content_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_EVENLY); // 子对象居中对齐，等距分布
+
+    /*
+    ESP_LOGI(TAG, "emotion_container");
+    lv_obj_t* emotion_gif = lv_gif_create(screen);
+    int gif_size = LV_HOR_RES;
+    lv_obj_set_size(emotion_gif, 60, 60);
+    lv_obj_set_style_border_width(emotion_gif, 0, 0);
+    lv_obj_set_style_bg_opa(emotion_gif, LV_OPA_TRANSP, 0);
+    lv_obj_center(emotion_gif);
+    lv_gif_set_src(emotion_gif, &neutral);
+   */
 
     emotion_label_ = lv_label_create(content_);
     lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);
