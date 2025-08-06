@@ -28,6 +28,9 @@ choice BOARD_TYPE
     default BOARD_TYPE_BREAD_COMPACT_WIFI
     help
         Board type. 开发板类型
+    config BOARD_TYPE_PANBOPO
+        bool "PANBOPO"
+        depends on IDF_TARGET_ESP32C3    
     config BOARD_TYPE_BREAD_COMPACT_WIFI
         bool "面包板新版接线（WiFi）"
         depends on IDF_TARGET_ESP32S3
