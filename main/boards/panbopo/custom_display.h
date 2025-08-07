@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-07 20:53:34
  * @LastEditors: zhouke
- * @LastEditTime: 2025-08-07 21:39:43
+ * @LastEditTime: 2025-08-07 22:05:18
  * @FilePath: \xiaozhi-esp32\main\boards\panbopo\custom_display.h
  */
 #pragma once
@@ -43,6 +43,9 @@ public:
      * 停止表情动画
      */
     void StopEmotionAnimation();
+
+
+    static CustomLcdDisplay* GetInstance();
 
     /**
      * 析构函数

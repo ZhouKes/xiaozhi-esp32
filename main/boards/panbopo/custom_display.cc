@@ -102,6 +102,7 @@ static const ThemeColors LIGHT_THEME = {
 static ThemeColors current_theme = DARK_THEME;
 
 // 构造函数实现
+static CustomLcdDisplay* s_instance = nullptr;
 CustomLcdDisplay::CustomLcdDisplay(esp_lcd_panel_io_handle_t io_handle, 
                 esp_lcd_panel_handle_t panel_handle,
                 int width,
@@ -119,6 +120,7 @@ CustomLcdDisplay::CustomLcdDisplay(esp_lcd_panel_io_handle_t io_handle,
                     .emoji_font = font_emoji_32_init(),
                 }) {
     DisplayLockGuard lock(this);
+    s_instance = this;
     SetupUI();
 }
 
@@ -187,7 +189,6 @@ void CustomLcdDisplay::SetupUI() {
     int gif_size = LV_HOR_RES;
     lv_obj_set_size(emotion_image_, 280, 280);
     lv_obj_set_style_border_width(emotion_image_, 0, 0);
-    lv_obj_set_style_bg_opa(emotion_image_, LV_OPA_TRANSP, 0);
     lv_obj_center(emotion_image_);
     lv_image_set_src(emotion_image_, &angry_00);
     
@@ -199,7 +200,7 @@ void CustomLcdDisplay::SetupUI() {
     lv_anim_init(emotion_anim_);
     
     // 启动表情动画
-    //StartEmotionAnimation();
+    StartEmotionAnimation();
 
     emotion_label_ = lv_label_create(content_);
     lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);
@@ -289,9 +290,8 @@ void CustomLcdDisplay::SetChatMessage(const std::string& message)
 // LVGL动画回调函数 - 用于更新表情图片
 static void emotion_anim_cb(void* obj, int32_t value) {
     lv_obj_t* image = (lv_obj_t*)obj;
-    
     // 获取CustomLcdDisplay实例
-    CustomLcdDisplay* display = (CustomLcdDisplay*)lv_obj_get_user_data(image);
+    CustomLcdDisplay* display = CustomLcdDisplay::GetInstance() ;
     if (display) {
         // 计算当前帧索引（value从0到999，映射到0-9帧）
         int frame_index = (value * display->ANGRY_GIF_FRAMES) / 1000;
@@ -316,7 +316,7 @@ void CustomLcdDisplay::StartEmotionAnimation() {
     lv_anim_set_var(emotion_anim_, emotion_image_);           // 动画目标对象
     lv_anim_set_exec_cb(emotion_anim_, emotion_anim_cb);      // 动画执行回调
     lv_anim_set_values(emotion_anim_, 0, 999);               // 动画值范围：0-999
-    lv_anim_set_time(emotion_anim_, 1000);                   // 动画周期：1秒
+    lv_anim_set_time(emotion_anim_, 5000);                   // 动画周期：1秒
     lv_anim_set_repeat_count(emotion_anim_, LV_ANIM_REPEAT_INFINITE); // 无限循环
     lv_anim_set_path_cb(emotion_anim_, lv_anim_path_linear);  // 线性动画路径
     
@@ -336,6 +336,11 @@ void CustomLcdDisplay::StopEmotionAnimation() {
 
 // 析构函数实现
 CustomLcdDisplay::~CustomLcdDisplay() {
+
+    // Clear the static instance pointer if this instance is being deleted
+    if (s_instance == this) {
+        s_instance = nullptr;
+    }
     // 停止动画
     StopEmotionAnimation();
     
@@ -344,4 +349,9 @@ CustomLcdDisplay::~CustomLcdDisplay() {
         delete emotion_anim_;
         emotion_anim_ = nullptr;
     }
+}
+
+// Implementation of the GetInstance method
+CustomLcdDisplay* CustomLcdDisplay::GetInstance() {
+    return s_instance;
 }
