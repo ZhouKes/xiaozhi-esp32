@@ -106,6 +106,7 @@ SpiLcdDisplay::SpiLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_h
     lvgl_port_cfg_t port_cfg = ESP_LVGL_PORT_INIT_CONFIG();
     port_cfg.task_priority = 1;
     port_cfg.timer_period_ms = 50;
+    port_cfg.task_stack = 8192;
     lvgl_port_init(&port_cfg);
 
     ESP_LOGI(TAG, "Adding LCD display");
@@ -144,8 +145,9 @@ SpiLcdDisplay::SpiLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel_h
     if (offset_x != 0 || offset_y != 0) {
         lv_display_set_offset(display_, offset_x, offset_y);
     }
-
+#if !CONFIG_BOARD_TYPE_PANBOPO
     SetupUI();
+#endif    
 }
 
 // RGB LCD实现
@@ -740,17 +742,6 @@ void LcdDisplay::SetupUI() {
 
     lv_obj_set_flex_flow(content_, LV_FLEX_FLOW_COLUMN); // 垂直布局（从上到下）
     lv_obj_set_flex_align(content_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_EVENLY); // 子对象居中对齐，等距分布
-
-    /*
-    ESP_LOGI(TAG, "emotion_container");
-    lv_obj_t* emotion_gif = lv_gif_create(screen);
-    int gif_size = LV_HOR_RES;
-    lv_obj_set_size(emotion_gif, 60, 60);
-    lv_obj_set_style_border_width(emotion_gif, 0, 0);
-    lv_obj_set_style_bg_opa(emotion_gif, LV_OPA_TRANSP, 0);
-    lv_obj_center(emotion_gif);
-    lv_gif_set_src(emotion_gif, &neutral);
-   */
 
     emotion_label_ = lv_label_create(content_);
     lv_obj_set_style_text_font(emotion_label_, &font_awesome_30_4, 0);

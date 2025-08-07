@@ -222,8 +222,10 @@ endif()
 file(GLOB BOARD_SOURCES
     ${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD_TYPE}/*.cc
     ${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD_TYPE}/*.c
+    ${CMAKE_CURRENT_SOURCE_DIR}/boards/${BOARD_TYPE}/assets/*.c
 )
 list(APPEND SOURCES ${BOARD_SOURCES})
+
 
 if(CONFIG_USE_AUDIO_PROCESSOR)
     list(APPEND SOURCES "audio/processors/afe_audio_processor.cc")

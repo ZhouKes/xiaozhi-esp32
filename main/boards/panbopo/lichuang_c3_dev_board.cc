@@ -19,6 +19,7 @@
 #include "freertos/task.h"
 #include "esp_lcd_gc9a01.h"
 #include <esp_lcd_st77916.h>
+#include "custom_display.h"
 #define TAG "LichuangC3DevBoard"
 
 LV_FONT_DECLARE(font_puhui_16_4);
@@ -686,13 +687,8 @@ private:
         esp_lcd_panel_swap_xy(panel, DISPLAY_SWAP_XY);
         esp_lcd_panel_mirror(panel, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y);
         vTaskDelay(pdMS_TO_TICKS(100));
-        display_ = new SpiLcdDisplay(panel_io, panel,
-                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
-                                     {
-                                         .text_font = &font_puhui_16_4,
-                                         .icon_font = &font_awesome_16_4,
-                                         .emoji_font = font_emoji_32_init(),
-                                     });
+        display_ = new CustomLcdDisplay(panel_io, panel,
+                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY);
 #elif EP1531T
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = GPIO_NUM_NC;
