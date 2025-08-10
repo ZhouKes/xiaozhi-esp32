@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-07 20:53:34
  * @LastEditors: zhouke
- * @LastEditTime: 2025-08-10 22:29:31
+ * @LastEditTime: 2025-08-10 23:17:45
  * @FilePath: \xiaozhi-esp32\main\boards\panbopo\custom_display.h
  */
 #pragma once
@@ -27,6 +27,7 @@
  
 class CustomLcdDisplay : public SpiLcdDisplay {
 public:
+    lv_obj_t* emotion_bg;
     lv_obj_t* custom_bg;
     lv_obj_t* emotion_image_;
     lv_anim_t* emotion_anim_;
@@ -89,6 +90,16 @@ public:
      * 显示自定义背景
      */
     void ShowCustomBG();
+
+    /**
+     * 显示表情背景
+     */
+    void ShowEmotionBG();   
+
+    /**
+     * 隐藏表情背景
+     */
+    void HideEmotionBG();   
 
 
     static CustomLcdDisplay* GetInstance();

@@ -105,7 +105,7 @@ const lv_image_dsc_t* weather_gif[] = {
 
 
  
-LV_FONT_DECLARE(font_puhui_20_4);
+LV_FONT_DECLARE(font_puhui_30_4);
 LV_FONT_DECLARE(font_awesome_20_4);
 LV_FONT_DECLARE(font_awesome_30_4);
  
@@ -179,8 +179,8 @@ CustomLcdDisplay::CustomLcdDisplay(esp_lcd_panel_io_handle_t io_handle,
     : SpiLcdDisplay(io_handle, panel_handle,
                 width, height, offset_x, offset_y, mirror_x, mirror_y, swap_xy,
                 {
-                    .text_font = &font_puhui_20_4,
-                    .icon_font = &font_awesome_20_4,
+                    .text_font = &font_puhui_30_4,
+                    .icon_font = &font_awesome_30_4,
                     .emoji_font = font_emoji_32_init(),
                 }) {
     DisplayLockGuard lock(this);
@@ -248,17 +248,60 @@ void CustomLcdDisplay::SetupUI() {
     lv_obj_set_flex_align(content_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_SPACE_EVENLY); // 子对象居中对齐，等距分布
 
     
-    ESP_LOGI(TAG, "emotion_container");
-
+    //创建自定义UI
     custom_bg = lv_obj_create(screen);
     lv_obj_set_size(custom_bg, LV_HOR_RES, LV_VER_RES);
     lv_obj_set_style_bg_color(custom_bg, current_theme_.background, 0);
     lv_obj_set_style_border_width(custom_bg, 0, 0);
     lv_obj_set_style_border_color(custom_bg, current_theme_.border, 0);
     lv_obj_center(custom_bg);
+    lv_obj_set_flex_flow(custom_bg, LV_FLEX_FLOW_COLUMN);
+    lv_obj_set_style_pad_all(custom_bg, 0, 0);
+    lv_obj_set_style_pad_row(custom_bg, 0, 0);
+    // 设置flex对齐属性，让子对象在垂直和水平方向都居中
+    lv_obj_set_flex_align(custom_bg, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+    //lv_obj_add_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
+    
+    /* Custom Status bar */
+    lv_obj_t* custom_status_bar_ = lv_obj_create(custom_bg);
+    lv_obj_set_size(custom_status_bar_, LV_HOR_RES / 2, 40);
+    // 移除lv_obj_center调用，因为现在使用flex布局居中
+    lv_obj_set_style_radius(custom_status_bar_, 0, 0);
+    lv_obj_set_style_bg_color(custom_status_bar_, current_theme_.background, 0);
+    lv_obj_set_style_text_color(custom_status_bar_, current_theme_.text, 0);
+    lv_obj_set_flex_flow(custom_status_bar_, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_all(custom_status_bar_, 0, 0);
+    lv_obj_set_style_border_width(custom_status_bar_, 0, 0);
+    lv_obj_set_style_pad_column(custom_status_bar_, 0, 0);
+    lv_obj_set_style_pad_left(custom_status_bar_, 2, 0);
+    lv_obj_set_style_pad_right(custom_status_bar_, 2, 0);
+    lv_obj_set_flex_align(custom_status_bar_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
 
-    emotion_image_ = lv_image_create(custom_bg);
+    lv_obj_t* custom_status_bar2_ = lv_obj_create(custom_bg);
+    lv_obj_set_size(custom_status_bar2_, LV_HOR_RES / 2, 40);
+
+    battery_label_ = lv_label_create(custom_status_bar_);
+    lv_label_set_text(battery_label_, "");
+    lv_obj_set_style_text_font(battery_label_, fonts_.icon_font, 0);
+    lv_obj_set_style_text_color(battery_label_, current_theme_.text, 0);
+
+    network_label_ = lv_label_create(custom_status_bar_);
+    lv_label_set_text(network_label_, "");
+    lv_obj_set_style_text_font(network_label_, fonts_.icon_font, 0);
+    lv_obj_set_style_text_color(network_label_, current_theme_.text, 0);
+
+
+    ESP_LOGI(TAG, "emotion_container");
+    emotion_bg = lv_obj_create(screen);
+    lv_obj_set_size(emotion_bg, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_bg_color(emotion_bg, current_theme_.background, 0);
+    lv_obj_set_style_border_width(emotion_bg, 0, 0);
+    lv_obj_set_style_border_color(emotion_bg, current_theme_.border, 0);
+    lv_obj_center(emotion_bg);
+
+
+    emotion_image_ = lv_image_create(emotion_bg);
     current_emotion = "turnon";
     lv_obj_set_size(emotion_image_, 200, 200);
     lv_obj_set_style_border_width(emotion_image_, 0, 0);
@@ -300,10 +343,6 @@ void CustomLcdDisplay::SetupUI() {
     lv_obj_set_style_pad_left(status_bar_, 2, 0);
     lv_obj_set_style_pad_right(status_bar_, 2, 0);
 
-    network_label_ = lv_label_create(status_bar_);
-    lv_label_set_text(network_label_, "");
-    lv_obj_set_style_text_font(network_label_, fonts_.icon_font, 0);
-    lv_obj_set_style_text_color(network_label_, current_theme_.text, 0);
 
     notification_label_ = lv_label_create(status_bar_);
     lv_obj_set_flex_grow(notification_label_, 1);
@@ -323,10 +362,7 @@ void CustomLcdDisplay::SetupUI() {
     lv_obj_set_style_text_font(mute_label_, fonts_.icon_font, 0);
     lv_obj_set_style_text_color(mute_label_, current_theme_.text, 0);
 
-    battery_label_ = lv_label_create(status_bar_);
-    lv_label_set_text(battery_label_, "");
-    lv_obj_set_style_text_font(battery_label_, fonts_.icon_font, 0);
-    lv_obj_set_style_text_color(battery_label_, current_theme_.text, 0);
+
 
     low_battery_popup_ = lv_obj_create(screen);
     lv_obj_set_scrollbar_mode(low_battery_popup_, LV_SCROLLBAR_MODE_OFF);
@@ -483,22 +519,32 @@ void CustomLcdDisplay::ResumeEmotionAnimation() {
     is_emotion_animation_paused = false;
 }
 
-
-
-
-
+ 
 void CustomLcdDisplay::HideCustomBG() {
     DisplayLockGuard lock(this);
     lv_obj_add_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
     PauseWeatherAnimation();
-    PauseEmotionAnimation();
 }
 
 void CustomLcdDisplay::ShowCustomBG() {
+    DisplayLockGuard lock(this);
     lv_obj_clear_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
     ResumeWeatherAnimation();
+}
+
+
+void CustomLcdDisplay::ShowEmotionBG() {
+    DisplayLockGuard lock(this);
+    lv_obj_clear_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
     ResumeEmotionAnimation();
 }
+
+void CustomLcdDisplay::HideEmotionBG() {
+    DisplayLockGuard lock(this);
+    lv_obj_add_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
+    PauseEmotionAnimation();
+}
+
 
 // 析构函数实现
 CustomLcdDisplay::~CustomLcdDisplay() {

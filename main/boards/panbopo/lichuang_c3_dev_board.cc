@@ -767,6 +767,13 @@ public:
         static PwmBacklight backlight(DISPLAY_BACKLIGHT_PIN, DISPLAY_BACKLIGHT_OUTPUT_INVERT);
         return &backlight;
     }
+
+    virtual bool GetBatteryLevel(int& level, bool& charging, bool& discharging) override {
+        level = 90;
+        charging = false;
+        discharging = false;
+        return true;
+    }
 };
 
 DECLARE_BOARD(LichuangC3DevBoard);
