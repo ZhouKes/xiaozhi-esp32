@@ -14,7 +14,7 @@
 #include <cJSON.h>
 #include <driver/gpio.h>
 #include <arpa/inet.h>
-
+#include "boards/panbopo/custom_display.h"
 #define TAG "Application"
 
 
@@ -332,7 +332,10 @@ void Application::Start() {
 
     /* Setup the display */
     auto display = board.GetDisplay();
-
+    //等待5秒，关闭开机动画
+    vTaskDelay(pdMS_TO_TICKS(5000));
+    CustomLcdDisplay::GetInstance()->HideCustomBG();
+    ESP_LOGI(TAG, "开机动画已关闭");
     /* Setup the audio service */
     auto codec = board.GetAudioCodec();
     audio_service_.Initialize(codec);

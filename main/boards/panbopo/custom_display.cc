@@ -13,7 +13,7 @@
 #define TAG "CustomLcdDisplay"
 
 
-
+//表情图标
 LV_IMG_DECLARE(angry_00);
 LV_IMG_DECLARE(angry_01);
 LV_IMG_DECLARE(angry_02);
@@ -25,8 +25,53 @@ LV_IMG_DECLARE(angry_07);
 LV_IMG_DECLARE(angry_08);
 LV_IMG_DECLARE(angry_09);
 
+LV_IMG_DECLARE(smile_00);
+LV_IMG_DECLARE(smile_01);
+
+LV_IMG_DECLARE(turnon_00);
+LV_IMG_DECLARE(turnon_01);
+LV_IMG_DECLARE(turnon_02);
+LV_IMG_DECLARE(turnon_03);
+LV_IMG_DECLARE(turnon_04);
+LV_IMG_DECLARE(turnon_05);
+ 
+ 
 
 
+//传感器图标
+LV_IMG_DECLARE(thermometr_sun);
+LV_IMG_DECLARE(Tornado);
+LV_IMG_DECLARE(Thermometr);
+LV_IMG_DECLARE(Umbrella_rain);
+
+
+//天气动画
+LV_IMG_DECLARE(sunny_00);
+LV_IMG_DECLARE(sunny_01);
+LV_IMG_DECLARE(sunny_02);
+LV_IMG_DECLARE(sunny_03);
+LV_IMG_DECLARE(sunny_06);  
+LV_IMG_DECLARE(sunny_07);
+LV_IMG_DECLARE(sunny_08);
+LV_IMG_DECLARE(sunny_09);
+
+
+
+ 
+
+
+
+#define TURNON_GIF_FRAMES 5
+const lv_image_dsc_t* turnon_gif[] = {
+    &turnon_00,
+    &turnon_01,
+    &turnon_02,
+    &turnon_03,
+    &turnon_04,
+    &turnon_05,
+};
+
+#define ANGRY_GIF_FRAMES 9
 const lv_image_dsc_t* angry_gif[] = {
     &angry_00,
     &angry_01,
@@ -39,6 +84,25 @@ const lv_image_dsc_t* angry_gif[] = {
     &angry_08,
     &angry_09,
 };
+
+#define SMILE_GIF_FRAMES 2
+const lv_image_dsc_t* smile_gif[] = {
+    &smile_00,
+    &smile_01,
+};
+
+
+
+
+#define WEATHER_GIF_FRAMES 10
+const lv_image_dsc_t* weather_gif[] = {
+    &sunny_00,
+    &sunny_01,
+    &sunny_02,
+    &sunny_03,
+    &sunny_06,
+};
+
 
  
 LV_FONT_DECLARE(font_puhui_20_4);
@@ -185,12 +249,21 @@ void CustomLcdDisplay::SetupUI() {
 
     
     ESP_LOGI(TAG, "emotion_container");
-    emotion_image_ = lv_image_create(screen);
-    int gif_size = LV_HOR_RES;
-    lv_obj_set_size(emotion_image_, 280, 280);
+
+    custom_bg = lv_obj_create(screen);
+    lv_obj_set_size(custom_bg, LV_HOR_RES, LV_VER_RES);
+    lv_obj_set_style_bg_color(custom_bg, current_theme_.background, 0);
+    lv_obj_set_style_border_width(custom_bg, 0, 0);
+    lv_obj_set_style_border_color(custom_bg, current_theme_.border, 0);
+    lv_obj_center(custom_bg);
+
+
+    emotion_image_ = lv_image_create(custom_bg);
+    current_emotion = "turnon";
+    lv_obj_set_size(emotion_image_, 200, 200);
     lv_obj_set_style_border_width(emotion_image_, 0, 0);
     lv_obj_center(emotion_image_);
-    lv_image_set_src(emotion_image_, &angry_00);
+    lv_image_set_src(emotion_image_, &turnon_05);
     
     // 设置用户数据，以便动画回调函数可以访问CustomLcdDisplay实例
     lv_obj_set_user_data(emotion_image_, this);
@@ -289,20 +362,53 @@ void CustomLcdDisplay::SetChatMessage(const std::string& message)
 
 // LVGL动画回调函数 - 用于更新表情图片
 static void emotion_anim_cb(void* obj, int32_t value) {
+    CustomLcdDisplay* display = CustomLcdDisplay::GetInstance() ;
+
+    if (display->is_emotion_animation_paused) {
+        return;
+    }
     lv_obj_t* image = (lv_obj_t*)obj;
     // 获取CustomLcdDisplay实例
-    CustomLcdDisplay* display = CustomLcdDisplay::GetInstance() ;
+    //根据当前动画类型展示不同动画
     if (display) {
-        // 计算当前帧索引（value从0到999，映射到0-9帧）
-        int frame_index = (value * display->ANGRY_GIF_FRAMES) / 1000;
-        if (frame_index != display->current_frame_) {
-            display->current_frame_ = frame_index;
-            // 设置对应的图片（angry_gif数组在本文件中已定义）
+        std::string current_emotion = display->current_emotion;
+        if (current_emotion == "turnon") {
+            int frame_index = ((value * TURNON_GIF_FRAMES) / 200) % TURNON_GIF_FRAMES;
+            lv_image_set_src(image, turnon_gif[frame_index]);
+        } else if (current_emotion == "angry") {
+            int frame_index = (value * ANGRY_GIF_FRAMES) / 1000;
             lv_image_set_src(image, angry_gif[frame_index]);
+        } else if (current_emotion == "smile") {
+            int frame_index = (value * SMILE_GIF_FRAMES) / 1000;
+            lv_image_set_src(image, smile_gif[frame_index]);
         }
     }
 }
 
+static void weather_anim_cb(void* obj, int32_t value) {
+    CustomLcdDisplay* display = CustomLcdDisplay::GetInstance() ;
+
+    if (display->is_weather_animation_paused) {
+        return;
+    }
+    lv_obj_t* image = (lv_obj_t*)obj;
+    if (display) {  
+        std::string current_weather = display->current_weather;
+        if (current_weather == "sunny") {
+            int frame_index = (value * WEATHER_GIF_FRAMES) / 1000;
+            lv_image_set_src(image, weather_gif[frame_index]);
+        } else if (current_weather == "cloudy") {
+            //int frame_index = (value * WEATHER_GIF_FRAMES) / 1000;
+            //lv_image_set_src(image, weather_gif[frame_index]);
+        } else if (current_weather == "rainy") {
+            //int frame_index = (value * WEATHER_GIF_FRAMES) / 1000;
+            //lv_image_set_src(image, weather_gif[frame_index]);
+        }
+    }
+}
+
+
+    
 // 启动表情动画
 void CustomLcdDisplay::StartEmotionAnimation() {
     if (!emotion_anim_ || !emotion_image_) {
@@ -326,12 +432,72 @@ void CustomLcdDisplay::StartEmotionAnimation() {
     ESP_LOGI(TAG, "表情动画已启动，周期1秒，循环播放");
 }
 
+
+
 // 停止表情动画
 void CustomLcdDisplay::StopEmotionAnimation() {
     if (emotion_image_) {
         lv_anim_del(emotion_image_, nullptr);
         ESP_LOGI(TAG, "表情动画已停止");
     }
+}
+
+
+void CustomLcdDisplay::StartWeatherAnimation() {
+    if (!weather_anim_ || !weather_image_) {
+        return;
+    }
+
+    // 停止之前的动画（如果存在）
+    lv_anim_del(weather_image_, nullptr);
+    
+    // 设置动画参数
+    lv_anim_set_var(weather_anim_, weather_image_);           // 动画目标对象
+    lv_anim_set_exec_cb(weather_anim_, weather_anim_cb);      // 动画执行回调
+    lv_anim_set_values(weather_anim_, 0, 999);               // 动画值范围：0-999
+    lv_anim_set_time(weather_anim_, 2000);                   // 动画周期：1秒
+    lv_anim_set_repeat_count(weather_anim_, LV_ANIM_REPEAT_INFINITE); // 无限循环
+}
+
+
+void CustomLcdDisplay::StopWeatherAnimation() {
+    if (weather_image_) {
+        lv_anim_del(weather_image_, nullptr);
+        ESP_LOGI(TAG, "天气动画已停止");
+    }
+}
+
+void CustomLcdDisplay::PauseWeatherAnimation() {
+    is_weather_animation_paused = true;
+}
+
+void CustomLcdDisplay::ResumeWeatherAnimation() {
+    is_weather_animation_paused = false;
+}
+
+void CustomLcdDisplay::PauseEmotionAnimation() {
+    is_emotion_animation_paused = true;
+}
+
+void CustomLcdDisplay::ResumeEmotionAnimation() {
+    is_emotion_animation_paused = false;
+}
+
+
+
+
+
+void CustomLcdDisplay::HideCustomBG() {
+    DisplayLockGuard lock(this);
+    lv_obj_add_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
+    PauseWeatherAnimation();
+    PauseEmotionAnimation();
+}
+
+void CustomLcdDisplay::ShowCustomBG() {
+    lv_obj_clear_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
+    ResumeWeatherAnimation();
+    ResumeEmotionAnimation();
 }
 
 // 析构函数实现

@@ -1,7 +1,7 @@
 /*
  * @Date: 2025-08-07 20:53:34
  * @LastEditors: zhouke
- * @LastEditTime: 2025-08-07 22:05:18
+ * @LastEditTime: 2025-08-10 22:29:31
  * @FilePath: \xiaozhi-esp32\main\boards\panbopo\custom_display.h
  */
 #pragma once
@@ -27,9 +27,17 @@
  
 class CustomLcdDisplay : public SpiLcdDisplay {
 public:
+    lv_obj_t* custom_bg;
     lv_obj_t* emotion_image_;
     lv_anim_t* emotion_anim_;
+    lv_obj_t* weather_image_;
+    lv_anim_t* weather_anim_;
+    bool is_weather_animation_paused = false;
+    bool is_emotion_animation_paused = false;
 
+    // 表情动画相关变量
+    std::string current_emotion;
+    std::string current_weather;
     // 动画相关变量
     static const int ANGRY_GIF_FRAMES = 10;  // angry_gif数组的帧数
     int current_frame_ = 0;                  // 当前帧索引
@@ -43,6 +51,44 @@ public:
      * 停止表情动画
      */
     void StopEmotionAnimation();
+
+    /**
+     * 暂停表情动画 
+     */
+    void PauseEmotionAnimation();
+
+    /**
+     * 恢复表情动画
+     */
+    void ResumeEmotionAnimation();
+    /**
+     * 启动天气动画
+     */
+    void StartWeatherAnimation();
+
+    /**
+     * 停止天气动画
+     */
+    void StopWeatherAnimation();
+
+    /**
+     * 暂停天气动画
+     */
+    void PauseWeatherAnimation();
+
+    /**
+     * 恢复天气动画
+     */
+    void ResumeWeatherAnimation();
+    /**
+     * 隐藏自定义背景
+     */
+    void HideCustomBG();
+
+    /**
+     * 显示自定义背景
+     */
+    void ShowCustomBG();
 
 
     static CustomLcdDisplay* GetInstance();
