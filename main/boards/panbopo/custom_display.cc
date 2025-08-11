@@ -276,7 +276,7 @@ void CustomLcdDisplay::SetupUI() {
     lv_obj_set_style_pad_row(custom_bg, 0, 0);
     // 设置flex对齐属性，让子对象在垂直和水平方向都居中
     lv_obj_set_flex_align(custom_bg, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
-    //lv_obj_add_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
     
     /* Custom Status bar */
     lv_obj_t* custom_status_bar_ = lv_obj_create(custom_bg);
@@ -374,7 +374,7 @@ void CustomLcdDisplay::SetupUI() {
     lv_obj_set_size(label_sensor_value4, 100, 35);
     lv_label_set_text(label_sensor_value4, "35%");
     lv_label_set_long_mode(label_sensor_value4, LV_LABEL_LONG_DOT);
-    lv_obj_set_style_text_align(label_sensor_value1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_text_align(label_sensor_value4, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
 
  
 

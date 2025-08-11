@@ -33,7 +33,7 @@ public:
     lv_anim_t* emotion_anim_;
     lv_obj_t* weather_image_;
     lv_anim_t* weather_anim_;
-    bool is_weather_animation_paused = false;
+    bool is_weather_animation_paused = true;
     bool is_emotion_animation_paused = false;
 
     lv_obj_t* label_sensor_value1;
