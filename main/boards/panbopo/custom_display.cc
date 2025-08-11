@@ -625,7 +625,7 @@ void CustomLcdDisplay::SetEmotion(const char* emotion) {
 
     // 如果找到匹配的表情就显示对应图标，否则显示默认的neutral表情
     if (it != emotions.end()) {
-        current_emotion = it->text;
+        current_emotion = it->icon;
     } else {
         current_emotion = "smile";
     }
@@ -634,7 +634,7 @@ void CustomLcdDisplay::SetEmotion(const char* emotion) {
 
 void CustomLcdDisplay::SetStatus(const char* status) {
     DisplayLockGuard lock(this);
-
+    ESP_LOGI(TAG, "SetStatus: %s", status);
     if (strcmp(status, Lang::Strings::STANDBY) == 0) {
         lv_obj_clear_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
@@ -651,10 +651,7 @@ void CustomLcdDisplay::SetStatus(const char* status) {
         is_weather_animation_paused = true;
         is_emotion_animation_paused = false;
     }else{
-        lv_obj_clear_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
-        lv_obj_add_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
-        is_weather_animation_paused = false;
-        is_emotion_animation_paused = true;
+ 
     }
 
     if (status_label_ == nullptr) {
@@ -699,7 +696,7 @@ static void emotion_anim_cb(void* obj, int32_t value) {
             int frame_index = (value * ANGRY_GIF_FRAMES) / 1000;
             lv_image_set_src(image, angry_gif[frame_index]);
         } else if (current_emotion == "smile") {
-            int frame_index = (value * SMILE_GIF_FRAMES) / 1000;
+            int frame_index = ((value * SMILE_GIF_FRAMES) /200) % SMILE_GIF_FRAMES;
             lv_image_set_src(image, smile_gif[frame_index]);
         }
     }
