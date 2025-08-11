@@ -185,7 +185,7 @@ void yt_command_handler_task(void *pvParameters)
                 ESP_LOGI(TAG, "你好，小智 ");
                 // auto &app = Application::GetInstance();
                 // app.ToggleChatState();
-                Application::GetInstance().WakeWordInvoke1();
+                //////Application::GetInstance().WakeWordInvoke();
                 // Application::GetInstance().Clearaudio();
                 // vTaskDelay(pdMS_TO_TICKS(50)); //200
                 // 只在第一次进入时发送

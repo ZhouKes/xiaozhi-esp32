@@ -20,8 +20,11 @@
 #include "esp_lcd_gc9a01.h"
 #include <esp_lcd_st77916.h>
 #include "custom_display.h"
-#define TAG "LichuangC3DevBoard"
+#include "PFS123.h"
+#include "YT_UART.h"
 
+#define TAG "LichuangC3DevBoard"
+volatile bool is_battery_low = false;
 LV_FONT_DECLARE(font_puhui_16_4);
 LV_FONT_DECLARE(font_awesome_16_4);
 
@@ -735,6 +738,8 @@ public:
         // InitializeButtons();
         InitializeIot();
         GetBacklight()->SetBrightness(100);
+        PFS123_init();
+        YT_init();
     }
 
     virtual AudioCodec *GetAudioCodec() override
@@ -767,9 +772,12 @@ public:
         static PwmBacklight backlight(DISPLAY_BACKLIGHT_PIN, DISPLAY_BACKLIGHT_OUTPUT_INVERT);
         return &backlight;
     }
-
     virtual bool GetBatteryLevel(int& level, bool& charging, bool& discharging) override {
-        level = 90;
+        if(is_battery_low) {
+            level = 10;
+        } else {
+            level = 100;
+        }
         charging = false;
         discharging = true;
         return true;

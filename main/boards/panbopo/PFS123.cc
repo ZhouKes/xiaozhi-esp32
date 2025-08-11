@@ -1,3 +1,9 @@
+/*
+ * @Date: 2025-08-11 21:57:53
+ * @LastEditors: zhouke
+ * @LastEditTime: 2025-08-11 22:58:42
+ * @FilePath: \xiaozhi-esp32\main\boards\panbopo\PFS123.cc
+ */
 #include "PFS123.h"
 
 #include <esp_log.h>
@@ -17,7 +23,7 @@
 #define TAG "PFS123"
 #define UART_PORT_PFS123 UART_NUM_0
 #define RX_PIN_FPS123 GPIO_NUM_9
-
+extern volatile bool is_battery_low;
 #define BUF_SIZE (512) // 缓冲区大小
 extern "C" void uart_init_PFS123(void)
 {
@@ -36,8 +42,10 @@ extern "C" void uart_init_PFS123(void)
     // uart_set_pin(UART_PORT_YT, UART_PIN_NO_CHANGE, RX_PIN, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
     uart_set_pin(UART_PORT_PFS123, UART_PIN_NO_CHANGE, RX_PIN_FPS123, UART_PIN_NO_CHANGE, UART_PIN_NO_CHANGE);
 
-    ESP_LOGI(TAG, "000000000000000000000001\n");
+ 
 }
+
+
 void uart_receive_task_PFS123(void *pvParameters)
 {
     uint8_t *data = (uint8_t *)malloc(256);
@@ -50,25 +58,9 @@ void uart_receive_task_PFS123(void *pvParameters)
             // 验证数据 并释放信号量
             if(data[0] == 0xFF) 
             {
-                // auto display = Board::GetInstance().GetDisplay();
-                // display->SetEmotion("shutdown");
-                // display->SetChatMessage("system", "电量低，即将关机...\n");
-
-                // Application::GetInstance().GetDisplay().ShowLowBatteryPopup(true);
-                lv_obj_t* low_battery_popup_ = nullptr;
-                auto screen = lv_screen_active();
-                low_battery_popup_ = lv_obj_create(screen);
-                lv_obj_set_scrollbar_mode(low_battery_popup_, LV_SCROLLBAR_MODE_OFF);
-                lv_obj_set_size(low_battery_popup_, LV_HOR_RES * 0.9, LV_VER_RES * 0.9);
-                lv_obj_align(low_battery_popup_, LV_ALIGN_BOTTOM_MID, 0, 0);
-                lv_obj_set_style_bg_color(low_battery_popup_, lv_color_hex(0xFF0000), 0);
-                lv_obj_set_style_radius(low_battery_popup_, 10, 0);
-                lv_obj_t* low_battery_label = lv_label_create(low_battery_popup_);
-                lv_label_set_text(low_battery_label, Lang::Strings::BATTERY_NEED_CHARGE);
-                lv_obj_set_style_text_color(low_battery_label, lv_color_white(), 0);
-                lv_obj_center(low_battery_label);
-                auto& app = Application::GetInstance();
-                app.PlaySound(Lang::Sounds::P3_LOW_BATTERY);
+                is_battery_low = true;
+            }else{
+                is_battery_low = false;
             }
             printf("\n");
             // gpio_reset_pin(GPIO_NUM_9);
@@ -83,5 +75,5 @@ void uart_receive_task_PFS123(void *pvParameters)
 void PFS123_init()
 {
     uart_init_PFS123();
-    xTaskCreate(uart_receive_task_PFS123, "uart_receive_task_PFS123", 4096, NULL, 12, NULL);
+    xTaskCreate(uart_receive_task_PFS123, "uart_receive_task_PFS123", 1024, NULL, 12, NULL);
 }
