@@ -22,6 +22,7 @@ LV_FONT_DECLARE(time20);
  
 
 //表情图标
+//愤怒
 LV_IMG_DECLARE(angry_00);
 LV_IMG_DECLARE(angry_01);
 LV_IMG_DECLARE(angry_02);
@@ -36,6 +37,7 @@ LV_IMG_DECLARE(angry_09);
 LV_IMG_DECLARE(smile_00);
 LV_IMG_DECLARE(smile_01);
 
+//开机动画
 LV_IMG_DECLARE(turnon_00);
 LV_IMG_DECLARE(turnon_01);
 LV_IMG_DECLARE(turnon_02);
@@ -243,6 +245,13 @@ void CustomLcdDisplay::SetupUI() {
     lv_obj_set_style_bg_color(container_, current_theme_.background, 0);
     lv_obj_set_style_border_color(container_, current_theme_.border, 0);
 
+    lv_obj_t* empty_bar1_ = lv_obj_create(container_);
+    lv_obj_set_size(empty_bar1_, LV_HOR_RES, 30);
+    lv_obj_set_style_border_width(empty_bar1_, 0, 0);
+ 
+    
+ 
+    
     /* Status bar */
     status_bar_ = lv_obj_create(container_);
     lv_obj_set_size(status_bar_, LV_HOR_RES, fonts_.text_font->line_height);
@@ -354,6 +363,7 @@ void CustomLcdDisplay::SetupUI() {
     lv_obj_set_size(sensor_bar, LV_HOR_RES, 160);
     lv_obj_set_style_border_width(sensor_bar, 0, 0);
     lv_obj_set_scrollbar_mode(sensor_bar, LV_SCROLLBAR_MODE_OFF);
+    lv_obj_center(sensor_bar);
 
     lv_obj_t* empty_bar = lv_obj_create(custom_bg);
     lv_obj_set_size(empty_bar, LV_HOR_RES, 50);
@@ -587,7 +597,7 @@ void CustomLcdDisplay::SetEmotion(const char* emotion) {
         {"smile", "laughing"},
         {"smile", "funny"},
         {"smile", "sad"},
-        {"smile", "angry"},
+        {"angry", "angry"},
         {"smile", "crying"},
         {"smile", "loving"},
         {"smile", "embarrassed"},
@@ -708,7 +718,6 @@ static void weather_anim_cb(void* obj, int32_t value) {
         if (current_weather == "sunny") {
             int frame_index = (value * SUNNY_GIF_FRAMES) / 1000;
             lv_image_set_src(image, sunny_gif[frame_index]);
-            ESP_LOGI(TAG, "sunny");
         } else if (current_weather == "cloudy") {
             int frame_index = (value * SUNNY_GIF_FRAMES) / 1000;
             lv_image_set_src(image, sunny_gif[frame_index]);
