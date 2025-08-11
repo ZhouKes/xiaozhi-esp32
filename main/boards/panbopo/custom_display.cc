@@ -12,6 +12,14 @@
 #include <string.h>
 #define TAG "CustomLcdDisplay"
 
+//字体
+LV_FONT_DECLARE(time70);
+LV_FONT_DECLARE(time60);
+LV_FONT_DECLARE(time50);
+LV_FONT_DECLARE(time40);
+LV_FONT_DECLARE(time30);
+LV_FONT_DECLARE(time20);
+ 
 
 //表情图标
 LV_IMG_DECLARE(angry_00);
@@ -50,6 +58,8 @@ LV_IMG_DECLARE(sunny_00);
 LV_IMG_DECLARE(sunny_01);
 LV_IMG_DECLARE(sunny_02);
 LV_IMG_DECLARE(sunny_03);
+LV_IMG_DECLARE(sunny_04);
+LV_IMG_DECLARE(sunny_05);
 LV_IMG_DECLARE(sunny_06);  
 LV_IMG_DECLARE(sunny_07);
 LV_IMG_DECLARE(sunny_08);
@@ -94,13 +104,18 @@ const lv_image_dsc_t* smile_gif[] = {
 
 
 
-#define WEATHER_GIF_FRAMES 10
-const lv_image_dsc_t* weather_gif[] = {
+#define SUNNY_GIF_FRAMES 10
+const lv_image_dsc_t* sunny_gif[] = {
     &sunny_00,
     &sunny_01,
     &sunny_02,
     &sunny_03,
+    &sunny_04,
+    &sunny_05,
     &sunny_06,
+    &sunny_07,
+    &sunny_08,
+    &sunny_09,  
 };
 
 
@@ -264,13 +279,13 @@ void CustomLcdDisplay::SetupUI() {
     
     /* Custom Status bar */
     lv_obj_t* custom_status_bar_ = lv_obj_create(custom_bg);
-    lv_obj_set_size(custom_status_bar_, LV_HOR_RES / 2, 40);
+    lv_obj_set_size(custom_status_bar_, LV_HOR_RES / 2, 50);
     lv_obj_set_style_radius(custom_status_bar_, 0, 0);
     lv_obj_set_style_bg_color(custom_status_bar_, current_theme_.background, 0);
     lv_obj_set_style_text_color(custom_status_bar_, current_theme_.text, 0);
     lv_obj_set_flex_flow(custom_status_bar_, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_all(custom_status_bar_, 0, 0);
-    //////lv_obj_set_style_border_width(custom_status_bar_, 0, 0);
+    lv_obj_set_style_border_width(custom_status_bar_, 0, 0);
     lv_obj_set_style_pad_column(custom_status_bar_, 0, 0);
     lv_obj_set_style_pad_left(custom_status_bar_, 2, 0);
     lv_obj_set_style_pad_right(custom_status_bar_, 2, 0);
@@ -293,19 +308,53 @@ void CustomLcdDisplay::SetupUI() {
 
 
     lv_obj_t* time_label = lv_label_create(custom_bg);
-    lv_obj_set_size(time_label, LV_HOR_RES, 80);
+    lv_obj_set_size(time_label, LV_HOR_RES, 60);
+    lv_obj_set_style_text_font(time_label, &time70, 0);
     lv_label_set_text(time_label, "14:13");
     lv_obj_set_style_text_align(time_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_center(time_label);
+    
  
  
     lv_obj_t* weather_bar = lv_obj_create(custom_bg);
     lv_obj_set_size(weather_bar, LV_HOR_RES, 80);
-    /////lv_obj_set_style_border_width(weather_bar, 0, 0);
+    lv_obj_set_style_border_width(weather_bar, 0, 0);
+    
+    // 设置weather_bar为水平方向灵活布局
+    lv_obj_set_flex_flow(weather_bar, LV_FLEX_FLOW_ROW);
+    lv_obj_set_style_pad_all(weather_bar, 10, 0);
+    lv_obj_set_style_pad_column(weather_bar, 10, 0);
+    // 设置子组件在垂直方向居中对齐
+    lv_obj_set_flex_align(weather_bar, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
+
+    
+    // 创建天气图片组件
+    weather_image_ = lv_image_create(weather_bar);
+    lv_obj_set_size(weather_image_, 60, 60);
+    lv_obj_set_flex_grow(weather_image_, 1);
+    lv_obj_set_style_border_width(weather_image_, 0, 0);
+    lv_image_set_src(weather_image_, &sunny_00); // 设置初始天气图片
+    
+    // 创建警告消息标签组件
+    lv_obj_t* warning_label = lv_label_create(weather_bar);
+    lv_obj_set_flex_grow(warning_label, 1);
+    lv_obj_set_style_text_align(warning_label, LV_TEXT_ALIGN_CENTER, 0);
+    lv_obj_set_style_text_color(warning_label, lv_color_hex(0xFF0000), 0);
+    lv_label_set_text(warning_label, "电池电量低");
+
+    //lv_obj_add_flag(warning_label, LV_OBJ_FLAG_HIDDEN);
+    
+    // 设置初始天气状态并启动天气动画
+    current_weather = "sunny";
+    weather_anim_ = new lv_anim_t();
+    lv_anim_init(weather_anim_);
+ 
+    StartWeatherAnimation();
 
 
 
     lv_obj_t* sensor_bar = lv_obj_create(custom_bg);
-    lv_obj_set_size(sensor_bar, LV_HOR_RES, 160);
+    lv_obj_set_size(sensor_bar, LV_HOR_RES, 170);
     /////lv_obj_set_style_border_width(sensor_bar, 0, 0);
  
  
@@ -441,23 +490,28 @@ static void emotion_anim_cb(void* obj, int32_t value) {
 }
 
 static void weather_anim_cb(void* obj, int32_t value) {
-    CustomLcdDisplay* display = CustomLcdDisplay::GetInstance() ;
 
+    CustomLcdDisplay* display = CustomLcdDisplay::GetInstance() ;
     if (display->is_weather_animation_paused) {
         return;
     }
+    
     lv_obj_t* image = (lv_obj_t*)obj;
     if (display) {  
         std::string current_weather = display->current_weather;
         if (current_weather == "sunny") {
-            int frame_index = (value * WEATHER_GIF_FRAMES) / 1000;
-            lv_image_set_src(image, weather_gif[frame_index]);
+            int frame_index = (value * SUNNY_GIF_FRAMES) / 1000;
+            lv_image_set_src(image, sunny_gif[frame_index]);
+            ESP_LOGI(TAG, "sunny");
         } else if (current_weather == "cloudy") {
-            //int frame_index = (value * WEATHER_GIF_FRAMES) / 1000;
-            //lv_image_set_src(image, weather_gif[frame_index]);
+            int frame_index = (value * SUNNY_GIF_FRAMES) / 1000;
+            lv_image_set_src(image, sunny_gif[frame_index]);
         } else if (current_weather == "rainy") {
-            //int frame_index = (value * WEATHER_GIF_FRAMES) / 1000;
-            //lv_image_set_src(image, weather_gif[frame_index]);
+            int frame_index = (value * SUNNY_GIF_FRAMES) / 1000;
+            lv_image_set_src(image, sunny_gif[frame_index]);
+        }else{
+            int frame_index = (value * SUNNY_GIF_FRAMES) / 1000;
+            lv_image_set_src(image, sunny_gif[frame_index]);
         }
     }
 }
@@ -469,7 +523,6 @@ void CustomLcdDisplay::StartEmotionAnimation() {
     if (!emotion_anim_ || !emotion_image_) {
         return;
     }
-    
     // 停止之前的动画（如果存在）
     lv_anim_del(emotion_image_, nullptr);
     
@@ -502,7 +555,6 @@ void CustomLcdDisplay::StartWeatherAnimation() {
     if (!weather_anim_ || !weather_image_) {
         return;
     }
-
     // 停止之前的动画（如果存在）
     lv_anim_del(weather_image_, nullptr);
     
@@ -512,6 +564,9 @@ void CustomLcdDisplay::StartWeatherAnimation() {
     lv_anim_set_values(weather_anim_, 0, 999);               // 动画值范围：0-999
     lv_anim_set_time(weather_anim_, 2000);                   // 动画周期：1秒
     lv_anim_set_repeat_count(weather_anim_, LV_ANIM_REPEAT_INFINITE); // 无限循环
+
+    // 启动动画
+    lv_anim_start(weather_anim_);
 }
 
 
