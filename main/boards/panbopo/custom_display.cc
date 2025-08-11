@@ -624,6 +624,29 @@ void CustomLcdDisplay::SetEmotion(const char* emotion) {
 
 void CustomLcdDisplay::SetStatus(const char* status) {
     DisplayLockGuard lock(this);
+
+    if (strcmp(status, Lang::Strings::STANDBY) == 0) {
+        lv_obj_clear_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
+        is_weather_animation_paused = false;
+        is_emotion_animation_paused = true;
+    } else if (strcmp(status, Lang::Strings::LISTENING) == 0) {
+        lv_obj_add_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
+        is_weather_animation_paused = true;
+        is_emotion_animation_paused = false;
+    } else if (strcmp(status, Lang::Strings::SPEAKING) == 0) {
+        lv_obj_add_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_clear_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
+        is_weather_animation_paused = true;
+        is_emotion_animation_paused = false;
+    }else{
+        lv_obj_clear_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
+        lv_obj_add_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
+        is_weather_animation_paused = false;
+        is_emotion_animation_paused = true;
+    }
+
     if (status_label_ == nullptr) {
         return;
     }
@@ -632,8 +655,6 @@ void CustomLcdDisplay::SetStatus(const char* status) {
     lv_obj_add_flag(notification_label_, LV_OBJ_FLAG_HIDDEN);
 
     last_status_update_time_ = std::chrono::system_clock::now();
-
-
     
 }
 
@@ -761,47 +782,29 @@ void CustomLcdDisplay::StopWeatherAnimation() {
         ESP_LOGI(TAG, "天气动画已停止");
     }
 }
-
-void CustomLcdDisplay::PauseWeatherAnimation() {
-    is_weather_animation_paused = true;
-}
-
-void CustomLcdDisplay::ResumeWeatherAnimation() {
-    is_weather_animation_paused = false;
-}
-
-void CustomLcdDisplay::PauseEmotionAnimation() {
-    is_emotion_animation_paused = true;
-}
-
-void CustomLcdDisplay::ResumeEmotionAnimation() {
-    is_emotion_animation_paused = false;
-}
-
  
 void CustomLcdDisplay::HideCustomBG() {
     DisplayLockGuard lock(this);
     lv_obj_add_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
-    PauseWeatherAnimation();
+    is_weather_animation_paused = true;
 }
 
 void CustomLcdDisplay::ShowCustomBG() {
     DisplayLockGuard lock(this);
     lv_obj_clear_flag(custom_bg, LV_OBJ_FLAG_HIDDEN);
-    ResumeWeatherAnimation();
+    is_weather_animation_paused = false;
 }
-
 
 void CustomLcdDisplay::ShowEmotionBG() {
     DisplayLockGuard lock(this);
     lv_obj_clear_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
-    ResumeEmotionAnimation();
+    is_emotion_animation_paused = false;
 }
 
 void CustomLcdDisplay::HideEmotionBG() {
     DisplayLockGuard lock(this);
     lv_obj_add_flag(emotion_bg, LV_OBJ_FLAG_HIDDEN);
-    PauseEmotionAnimation();
+    is_emotion_animation_paused = true;
 }
 
 void CustomLcdDisplay::SetSensorData1(const char* value1) {

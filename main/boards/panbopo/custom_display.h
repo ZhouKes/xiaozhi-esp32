@@ -60,15 +60,6 @@ public:
     void StopEmotionAnimation();
 
     /**
-     * 暂停表情动画 
-     */
-    void PauseEmotionAnimation();
-
-    /**
-     * 恢复表情动画
-     */
-    void ResumeEmotionAnimation();
-    /**
      * 启动天气动画
      */
     void StartWeatherAnimation();
@@ -78,15 +69,6 @@ public:
      */
     void StopWeatherAnimation();
 
-    /**
-     * 暂停天气动画
-     */
-    void PauseWeatherAnimation();
-
-    /**
-     * 恢复天气动画
-     */
-    void ResumeWeatherAnimation();
     /**
      * 隐藏自定义背景
      */
