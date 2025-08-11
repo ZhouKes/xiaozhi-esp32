@@ -105,7 +105,7 @@ const lv_image_dsc_t* weather_gif[] = {
 
 
  
-LV_FONT_DECLARE(font_puhui_30_4);
+LV_FONT_DECLARE(font_puhui_20_4);
 LV_FONT_DECLARE(font_awesome_20_4);
 LV_FONT_DECLARE(font_awesome_30_4);
  
@@ -179,7 +179,7 @@ CustomLcdDisplay::CustomLcdDisplay(esp_lcd_panel_io_handle_t io_handle,
     : SpiLcdDisplay(io_handle, panel_handle,
                 width, height, offset_x, offset_y, mirror_x, mirror_y, swap_xy,
                 {
-                    .text_font = &font_puhui_30_4,
+                    .text_font = &font_puhui_20_4,
                     .icon_font = &font_awesome_30_4,
                     .emoji_font = font_emoji_32_init(),
                 }) {
@@ -265,31 +265,50 @@ void CustomLcdDisplay::SetupUI() {
     /* Custom Status bar */
     lv_obj_t* custom_status_bar_ = lv_obj_create(custom_bg);
     lv_obj_set_size(custom_status_bar_, LV_HOR_RES / 2, 40);
-    // 移除lv_obj_center调用，因为现在使用flex布局居中
     lv_obj_set_style_radius(custom_status_bar_, 0, 0);
     lv_obj_set_style_bg_color(custom_status_bar_, current_theme_.background, 0);
     lv_obj_set_style_text_color(custom_status_bar_, current_theme_.text, 0);
     lv_obj_set_flex_flow(custom_status_bar_, LV_FLEX_FLOW_ROW);
     lv_obj_set_style_pad_all(custom_status_bar_, 0, 0);
-    lv_obj_set_style_border_width(custom_status_bar_, 0, 0);
+    //////lv_obj_set_style_border_width(custom_status_bar_, 0, 0);
     lv_obj_set_style_pad_column(custom_status_bar_, 0, 0);
     lv_obj_set_style_pad_left(custom_status_bar_, 2, 0);
     lv_obj_set_style_pad_right(custom_status_bar_, 2, 0);
     lv_obj_set_flex_align(custom_status_bar_, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
 
-    lv_obj_t* custom_status_bar2_ = lv_obj_create(custom_bg);
-    lv_obj_set_size(custom_status_bar2_, LV_HOR_RES / 2, 40);
-
     battery_label_ = lv_label_create(custom_status_bar_);
     lv_label_set_text(battery_label_, "");
     lv_obj_set_style_text_font(battery_label_, fonts_.icon_font, 0);
     lv_obj_set_style_text_color(battery_label_, current_theme_.text, 0);
+    lv_obj_set_style_pad_left(battery_label_, 10, 0);
+    lv_obj_set_style_pad_right(battery_label_, 10, 0);
 
     network_label_ = lv_label_create(custom_status_bar_);
     lv_label_set_text(network_label_, "");
     lv_obj_set_style_text_font(network_label_, fonts_.icon_font, 0);
     lv_obj_set_style_text_color(network_label_, current_theme_.text, 0);
+    lv_obj_set_style_pad_left(network_label_, 10, 0);
+    lv_obj_set_style_pad_right(network_label_, 10, 0);
+
+
+    lv_obj_t* time_label = lv_label_create(custom_bg);
+    lv_obj_set_size(time_label, LV_HOR_RES, 80);
+    lv_label_set_text(time_label, "14:13");
+    lv_obj_set_style_text_align(time_label, LV_TEXT_ALIGN_CENTER, 0);
+ 
+ 
+    lv_obj_t* weather_bar = lv_obj_create(custom_bg);
+    lv_obj_set_size(weather_bar, LV_HOR_RES, 80);
+    /////lv_obj_set_style_border_width(weather_bar, 0, 0);
+
+
+
+    lv_obj_t* sensor_bar = lv_obj_create(custom_bg);
+    lv_obj_set_size(sensor_bar, LV_HOR_RES, 160);
+    /////lv_obj_set_style_border_width(sensor_bar, 0, 0);
+ 
+ 
 
 
     ESP_LOGI(TAG, "emotion_container");
