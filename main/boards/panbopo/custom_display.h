@@ -155,7 +155,9 @@ public:
      * @param content 消息内容
      */
     void SetChatMessage(const char* role, const char* content) override;
-    
+    void SetEmotion(const char* emotion) override;
+    void SetStatus(const char* status) override;
+
     /**
      * 设置主题
      * @param theme_name 主题名称("dark", "light")

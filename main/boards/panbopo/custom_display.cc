@@ -574,11 +574,70 @@ void CustomLcdDisplay::SetupUI() {
 void CustomLcdDisplay::SetTheme(const std::string& theme_name) {
  
 }
-/*
-void CustomLcdDisplay::SetEmotion(const std::string& emotion) {
+
+void CustomLcdDisplay::SetEmotion(const char* emotion) {
+    struct Emotion {
+        const char* icon;
+        const char* text;
+    };
+
+    static const std::vector<Emotion> emotions = {
+        {"smile", "neutral"},
+        {"smile", "happy"},
+        {"smile", "laughing"},
+        {"smile", "funny"},
+        {"smile", "sad"},
+        {"smile", "angry"},
+        {"smile", "crying"},
+        {"smile", "loving"},
+        {"smile", "embarrassed"},
+        {"smile", "surprised"},
+        {"smile", "shocked"},
+        {"smile", "thinking"},
+        {"smile", "winking"},
+        {"smile", "cool"},
+        {"smile", "relaxed"},
+        {"smile", "delicious"},
+        {"smile", "kissy"},
+        {"smile", "confident"},
+        {"smile", "sleepy"},
+        {"smile", "silly"},
+        {"smile", "confused"}
+    };
+    
+    // 查找匹配的表情
+    std::string_view emotion_view(emotion);
+    auto it = std::find_if(emotions.begin(), emotions.end(),
+        [&emotion_view](const Emotion& e) { return e.text == emotion_view; });
+
+    DisplayLockGuard lock(this);
  
+
+    // 如果找到匹配的表情就显示对应图标，否则显示默认的neutral表情
+    if (it != emotions.end()) {
+        current_emotion = it->text;
+    } else {
+        current_emotion = "smile";
+    }
+
 }
 
+void CustomLcdDisplay::SetStatus(const char* status) {
+    DisplayLockGuard lock(this);
+    if (status_label_ == nullptr) {
+        return;
+    }
+    lv_label_set_text(status_label_, status);
+    lv_obj_clear_flag(status_label_, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(notification_label_, LV_OBJ_FLAG_HIDDEN);
+
+    last_status_update_time_ = std::chrono::system_clock::now();
+
+
+    
+}
+
+/*
 void CustomLcdDisplay::SetPreviewImage(const std::string& image_path) {
  
 }
