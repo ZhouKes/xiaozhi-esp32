@@ -36,6 +36,12 @@ public:
     bool is_weather_animation_paused = false;
     bool is_emotion_animation_paused = false;
 
+    lv_obj_t* label_sensor_value1;
+    lv_obj_t* label_sensor_value2;
+    lv_obj_t* label_sensor_value3;
+    lv_obj_t* label_sensor_value4;
+ 
+
     // 表情动画相关变量
     std::string current_emotion;
     std::string current_weather;
@@ -100,6 +106,15 @@ public:
      * 隐藏表情背景
      */
     void HideEmotionBG();   
+
+
+    /**
+     * 设置传感器数据
+     */
+    void SetSensorData1(const char* value1);
+    void SetSensorData2(const char* value2);
+    void SetSensorData3(const char* value3);
+    void SetSensorData4(const char* value4);
 
 
     static CustomLcdDisplay* GetInstance();

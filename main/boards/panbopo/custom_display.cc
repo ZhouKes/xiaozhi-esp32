@@ -119,8 +119,9 @@ const lv_image_dsc_t* sunny_gif[] = {
 };
 
 
- 
 LV_FONT_DECLARE(font_puhui_20_4);
+LV_FONT_DECLARE(font_puhui_16_4);
+LV_FONT_DECLARE(font_puhui_30_4);
 LV_FONT_DECLARE(font_awesome_20_4);
 LV_FONT_DECLARE(font_awesome_30_4);
  
@@ -194,7 +195,7 @@ CustomLcdDisplay::CustomLcdDisplay(esp_lcd_panel_io_handle_t io_handle,
     : SpiLcdDisplay(io_handle, panel_handle,
                 width, height, offset_x, offset_y, mirror_x, mirror_y, swap_xy,
                 {
-                    .text_font = &font_puhui_20_4,
+                    .text_font = &font_puhui_16_4,
                     .icon_font = &font_awesome_30_4,
                     .emoji_font = font_emoji_32_init(),
                 }) {
@@ -279,7 +280,7 @@ void CustomLcdDisplay::SetupUI() {
     
     /* Custom Status bar */
     lv_obj_t* custom_status_bar_ = lv_obj_create(custom_bg);
-    lv_obj_set_size(custom_status_bar_, LV_HOR_RES / 2, 50);
+    lv_obj_set_size(custom_status_bar_, LV_HOR_RES / 2, 40);
     lv_obj_set_style_radius(custom_status_bar_, 0, 0);
     lv_obj_set_style_bg_color(custom_status_bar_, current_theme_.background, 0);
     lv_obj_set_style_text_color(custom_status_bar_, current_theme_.text, 0);
@@ -308,8 +309,8 @@ void CustomLcdDisplay::SetupUI() {
 
 
     lv_obj_t* time_label = lv_label_create(custom_bg);
-    lv_obj_set_size(time_label, LV_HOR_RES, 60);
-    lv_obj_set_style_text_font(time_label, &time70, 0);
+    lv_obj_set_size(time_label, LV_HOR_RES, 50);
+    lv_obj_set_style_text_font(time_label, &time60, 0);
     lv_label_set_text(time_label, "14:13");
     lv_obj_set_style_text_align(time_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_center(time_label);
@@ -317,13 +318,13 @@ void CustomLcdDisplay::SetupUI() {
  
  
     lv_obj_t* weather_bar = lv_obj_create(custom_bg);
-    lv_obj_set_size(weather_bar, LV_HOR_RES, 80);
+    lv_obj_set_size(weather_bar, 280, 60);
     lv_obj_set_style_border_width(weather_bar, 0, 0);
     
     // 设置weather_bar为水平方向灵活布局
     lv_obj_set_flex_flow(weather_bar, LV_FLEX_FLOW_ROW);
-    lv_obj_set_style_pad_all(weather_bar, 10, 0);
-    lv_obj_set_style_pad_column(weather_bar, 10, 0);
+    lv_obj_set_style_pad_all(weather_bar, 0, 0);
+    lv_obj_set_style_pad_column(weather_bar, 0, 0);
     // 设置子组件在垂直方向居中对齐
     lv_obj_set_flex_align(weather_bar, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER, LV_FLEX_ALIGN_CENTER);
 
@@ -341,23 +342,148 @@ void CustomLcdDisplay::SetupUI() {
     lv_obj_set_style_text_align(warning_label, LV_TEXT_ALIGN_CENTER, 0);
     lv_obj_set_style_text_color(warning_label, lv_color_hex(0xFF0000), 0);
     lv_label_set_text(warning_label, "电池电量低");
-
-    //lv_obj_add_flag(warning_label, LV_OBJ_FLAG_HIDDEN);
+    lv_obj_add_flag(warning_label, LV_OBJ_FLAG_HIDDEN);
     
     // 设置初始天气状态并启动天气动画
     current_weather = "sunny";
     weather_anim_ = new lv_anim_t();
     lv_anim_init(weather_anim_);
- 
     StartWeatherAnimation();
 
-
-
     lv_obj_t* sensor_bar = lv_obj_create(custom_bg);
-    lv_obj_set_size(sensor_bar, LV_HOR_RES, 170);
-    /////lv_obj_set_style_border_width(sensor_bar, 0, 0);
+    lv_obj_set_size(sensor_bar, LV_HOR_RES, 160);
+    lv_obj_set_style_border_width(sensor_bar, 0, 0);
+    lv_obj_set_scrollbar_mode(sensor_bar, LV_SCROLLBAR_MODE_OFF);
+
+    lv_obj_t* empty_bar = lv_obj_create(custom_bg);
+    lv_obj_set_size(empty_bar, LV_HOR_RES, 50);
+    lv_obj_set_style_border_width(empty_bar, 0, 0);
+
+
+    //Write codes screen_label_sensor_name4
+    lv_obj_t* label_sensor_name4 = lv_label_create(sensor_bar);
+    lv_obj_set_pos(label_sensor_name4, 253, 120);
+    lv_obj_set_size(label_sensor_name4, 100, 22);
+    lv_label_set_text(label_sensor_name4, "传感器数据4");
+    lv_label_set_long_mode(label_sensor_name4, LV_LABEL_LONG_DOT);
  
+
+    //Write codes screen_label_sensor_value4
+    lv_obj_t* label_sensor_value4 = lv_label_create(sensor_bar);
+    lv_obj_set_pos(label_sensor_value4, 251, 89);
+    lv_obj_set_size(label_sensor_value4, 100, 35);
+    lv_label_set_text(label_sensor_value4, "35%");
+    lv_label_set_long_mode(label_sensor_value4, LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_align(label_sensor_value1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
  
+
+    //Write codes screen_sensor_img4
+    lv_obj_t* sensor_img4 = lv_image_create(sensor_bar);
+    lv_obj_set_pos(sensor_img4, 193, 99);
+    lv_obj_set_size(sensor_img4, 50, 50);
+    lv_image_set_src(sensor_img4, &Tornado);
+    
+
+    //Write codes screen_label_sensor_name3
+    lv_obj_t* label_sensor_name3 = lv_label_create(sensor_bar);
+    lv_obj_set_pos(label_sensor_name3, 77, 120);
+    lv_obj_set_size(label_sensor_name3, 100, 22);
+    lv_label_set_text(label_sensor_name3, "传感器数据3");
+    lv_label_set_long_mode(label_sensor_name3, LV_LABEL_LONG_DOT);
+ 
+
+    //Write codes screen_label_sensor_value3
+    label_sensor_value3 = lv_label_create(sensor_bar);
+    lv_obj_set_pos(label_sensor_value3, 76, 89);
+    lv_obj_set_size(label_sensor_value3, 100, 35);
+    lv_label_set_text(label_sensor_value3, "2000lux");
+    lv_label_set_long_mode(label_sensor_value3, LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_align(label_sensor_value3, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_sensor_img3
+    lv_obj_t* sensor_img3 = lv_image_create(sensor_bar);
+    lv_obj_set_pos(sensor_img3, 20, 99);
+    lv_obj_set_size(sensor_img3, 50, 50);
+    lv_image_set_src(sensor_img3, &Thermometr);
+ 
+
+    //Write codes screen_label_sensor_name2
+    lv_obj_t* label_sensor_name2 = lv_label_create(sensor_bar);
+    lv_obj_set_pos(label_sensor_name2, 253, 55);
+    lv_obj_set_size(label_sensor_name2, 100, 22);
+    lv_label_set_text(label_sensor_name2, "传感器数据2");
+    lv_label_set_long_mode(label_sensor_name2, LV_LABEL_LONG_DOT);
+
+
+    //Write codes screen_label_sensorvalue2
+    label_sensor_value2 = lv_label_create(sensor_bar);
+    lv_obj_set_pos(label_sensor_value2, 251, 15);
+    lv_obj_set_size(label_sensor_value2, 100, 35);
+    lv_label_set_text(label_sensor_value2, "64%");
+    lv_label_set_long_mode(label_sensor_value2, LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_align(label_sensor_value2, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+ 
+
+    //Write codes screen_sensor_img2
+    lv_obj_t* sensor_img2 = lv_image_create(sensor_bar);
+    lv_obj_set_pos(sensor_img2, 193, 16);
+    lv_obj_set_size(sensor_img2, 50, 50);
+    lv_image_set_src(sensor_img2, &Umbrella_rain);
+ 
+
+    //Write codes screen_label_sensor_name1
+    lv_obj_t* label_sensor_name1 = lv_label_create(sensor_bar);
+    lv_obj_set_pos(label_sensor_name1, 77, 55);
+    lv_obj_set_size(label_sensor_name1, 100, 22);
+    lv_label_set_text(label_sensor_name1, "传感器数据1");
+    lv_label_set_long_mode(label_sensor_name1, LV_LABEL_LONG_DOT);
+
+    
+    //Write codes screen_label_sensor_value1
+    label_sensor_value1 = lv_label_create(sensor_bar);
+    lv_obj_set_pos(label_sensor_value1, 76, 15);
+    lv_obj_set_size(label_sensor_value1, 100, 35);
+    lv_label_set_text(label_sensor_value1, "35°C");
+    lv_label_set_long_mode(label_sensor_value1, LV_LABEL_LONG_DOT);
+    lv_obj_set_style_text_align(label_sensor_value1, LV_TEXT_ALIGN_CENTER, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+ 
+
+    //Write codes screen_senser_img1
+    lv_obj_t* sensor_img1 = lv_image_create(sensor_bar);
+    lv_obj_set_pos(sensor_img1, 20, 16);
+    lv_obj_set_size(sensor_img1, 50, 50);
+    lv_obj_add_flag(sensor_img1, LV_OBJ_FLAG_CLICKABLE);
+    lv_image_set_src(sensor_img1, &thermometr_sun);
+ 
+
+    //Write codes screen_line_2
+    lv_obj_t* screen_line_2 = lv_line_create(sensor_bar);
+    lv_obj_set_pos(screen_line_2, 30, 80);
+    lv_obj_set_size(screen_line_2, 300, 1);
+    static lv_point_precise_t line_2[] = {{0, 0},{300, 0}};
+    lv_line_set_points(screen_line_2, line_2, 2);
+
+    //Write style for screen_line_2, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_line_width(screen_line_2, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_line_color(screen_line_2, lv_color_hex(0x757575), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_line_opa(screen_line_2, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_line_rounded(screen_line_2, true, LV_PART_MAIN|LV_STATE_DEFAULT);
+
+    //Write codes screen_line_1
+    lv_obj_t* screen_line_1 = lv_line_create(sensor_bar);
+    lv_obj_set_pos(screen_line_1, 180, 10);
+    lv_obj_set_size(screen_line_1, 1, 140);
+    static lv_point_precise_t line_1[] = {{0, 0},{0, 140}};
+    lv_line_set_points(screen_line_1, line_1, 2);
+
+    //Write style for screen_line_1, Part: LV_PART_MAIN, State: LV_STATE_DEFAULT.
+    lv_obj_set_style_line_width(screen_line_1, 2, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_line_color(screen_line_1, lv_color_hex(0x757575), LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_line_opa(screen_line_1, 255, LV_PART_MAIN|LV_STATE_DEFAULT);
+    lv_obj_set_style_line_rounded(screen_line_1, true, LV_PART_MAIN|LV_STATE_DEFAULT);
 
 
     ESP_LOGI(TAG, "emotion_container");
@@ -619,6 +745,25 @@ void CustomLcdDisplay::HideEmotionBG() {
     PauseEmotionAnimation();
 }
 
+void CustomLcdDisplay::SetSensorData1(const char* value1) {
+    DisplayLockGuard lock(this);
+    lv_label_set_text(label_sensor_value1, value1);
+}
+
+void CustomLcdDisplay::SetSensorData2(const char* value2) {
+    DisplayLockGuard lock(this);
+    lv_label_set_text(label_sensor_value2, value2);
+}
+
+void CustomLcdDisplay::SetSensorData3(const char* value3) {
+    DisplayLockGuard lock(this);
+    lv_label_set_text(label_sensor_value3, value3);
+}
+
+void CustomLcdDisplay::SetSensorData4(const char* value4) {
+    DisplayLockGuard lock(this);
+    lv_label_set_text(label_sensor_value4, value4);
+}
 
 // 析构函数实现
 CustomLcdDisplay::~CustomLcdDisplay() {
