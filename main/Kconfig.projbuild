@@ -70,6 +70,9 @@ choice BOARD_TYPE
     config BOARD_TYPE_ESP32S3_EYE
         bool "ESP32S3-EYE"
         depends on IDF_TARGET_ESP32S3
+    config BOARD_TYPE_ESP32S3_CGC_TOUCH
+        bool "ESP32S3 CGC TOUCH"
+        depends on IDF_TARGET_ESP32S3
     config BOARD_TYPE_BREAD_COMPACT_WIFI_ES8311
         bool "ES8311 面包板"
         depends on IDF_TARGET_ESP32S3
