@@ -11,6 +11,8 @@
 #include <esp_log.h>
 #include <driver/i2c_master.h>
 #include <driver/spi_common.h>
+#include <esp_lcd_touch_ft5x06.h>
+#include <esp_lvgl_port.h>
 #include <wifi_station.h>
 #include <esp_log.h>
 #include <driver/i2c_master.h>
@@ -70,7 +72,9 @@ private:
  
     Button boot_button_;
     LcdDisplay* display_;
-    i2c_master_bus_handle_t i2c_bus_;
+    i2c_master_bus_handle_t i2c_bus_codec_;
+    i2c_master_bus_handle_t i2c_bus_touch_;
+
 
     void InitializeSpi() {
         spi_bus_config_t buscfg = {};
@@ -87,8 +91,8 @@ private:
         // Initialize I2C peripheral
         i2c_master_bus_config_t i2c_bus_cfg = {
             .i2c_port = I2C_NUM_1,
-            .sda_io_num = I2C_SDA_PIN,
-            .scl_io_num = I2C_SCL_PIN,
+            .sda_io_num = CODEC_I2C_SDA_PIN,
+            .scl_io_num = CODEC_I2C_SCL_PIN,
             .clk_source = I2C_CLK_SRC_DEFAULT,
             .glitch_ignore_cnt = 7,
             .intr_priority = 0,
@@ -97,16 +101,70 @@ private:
                 .enable_internal_pullup = 1,
             },
         };
-        ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg, &i2c_bus_));
+        ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg, &i2c_bus_codec_));
+#if CONFIG_LCD_ST7796_320X480
+
+    i2c_master_bus_config_t i2c_bus_cfg_touch = {
+        .i2c_port = TOUCH_I2C_NUM,
+        .sda_io_num = TOUCH_I2C_SDA_PIN,
+        .scl_io_num = TOUCH_I2C_SCL_PIN,
+        .clk_source = I2C_CLK_SRC_DEFAULT,
+        .glitch_ignore_cnt = 7,
+        .intr_priority = 0,
+        .trans_queue_depth = 0,
+        .flags = {
+            .enable_internal_pullup = 1,
+        },
+    };
+    ESP_ERROR_CHECK(i2c_new_master_bus(&i2c_bus_cfg_touch, &i2c_bus_touch_));
+
+#endif
 
         // Print I2C bus info
-        if (i2c_master_probe(i2c_bus_, 0x18, 1000) != ESP_OK) {
+        if (i2c_master_probe(i2c_bus_codec_, 0x18, 1000) != ESP_OK) {
             while (1) {
                 ESP_LOGE(TAG, "Failed to probe I2C bus, please check if you have installed the correct firmware");
                 vTaskDelay(1000 / portTICK_PERIOD_MS);
             }
         }
     }
+
+#if CONFIG_LCD_ST7796_320X480
+    void InitializeTouch()
+    {
+        esp_lcd_touch_handle_t tp;
+        esp_lcd_touch_config_t tp_cfg = {
+            .x_max = DISPLAY_WIDTH,
+            .y_max = DISPLAY_HEIGHT,
+            .rst_gpio_num = TOUCH_RST_PIN, // Shared with LCD reset
+            .int_gpio_num = GPIO_NUM_NC, 
+            .levels = {
+                .reset = 0,
+                .interrupt = 0,
+            },
+            .flags = {
+                .swap_xy = 0,
+                .mirror_x = 0,
+                .mirror_y = 0,
+            },
+        };
+        esp_lcd_panel_io_handle_t tp_io_handle = NULL;
+        esp_lcd_panel_io_i2c_config_t tp_io_config = ESP_LCD_TOUCH_IO_I2C_FT5x06_CONFIG();
+        tp_io_config.scl_speed_hz = 400000;
+
+        esp_lcd_new_panel_io_i2c(i2c_bus_touch_, &tp_io_config, &tp_io_handle);
+        esp_lcd_touch_new_i2c_ft5x06(tp_io_handle, &tp_cfg, &tp);
+        assert(tp);
+
+        /* Add touch input (for selected screen) */
+        const lvgl_port_touch_cfg_t touch_cfg = {
+            .disp = lv_display_get_default(), 
+            .handle = tp,
+        };
+
+        lvgl_port_add_touch(&touch_cfg);
+    }
+#endif
 
     void InitializeLcdDisplay() {
         esp_lcd_panel_io_handle_t panel_io = nullptr;
@@ -117,7 +175,7 @@ private:
         io_config.cs_gpio_num = DISPLAY_CS_PIN;
         io_config.dc_gpio_num = DISPLAY_DC_PIN;
         io_config.spi_mode = DISPLAY_SPI_MODE;
-        io_config.pclk_hz = 40 * 1000 * 1000;
+        io_config.pclk_hz = 80 * 1000 * 1000;
         io_config.trans_queue_depth = 10;
         io_config.lcd_cmd_bits = 8;
         io_config.lcd_param_bits = 8;
@@ -187,6 +245,9 @@ public:
         InitializeSpi();
         InitializeI2cBus();
         InitializeLcdDisplay();
+#if CONFIG_LCD_ST7796_320X480
+        InitializeTouch();
+#endif
         InitializeButtons();
         InitializeTools();
         if (DISPLAY_BACKLIGHT_PIN != GPIO_NUM_NC) {
@@ -197,7 +258,7 @@ public:
  
 
     virtual AudioCodec* GetAudioCodec() override {
-        static Es8311AudioCodec audio_codec(i2c_bus_, I2C_NUM, AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
+        static Es8311AudioCodec audio_codec(i2c_bus_codec_, CODEC_I2C_NUM, AUDIO_INPUT_SAMPLE_RATE, AUDIO_OUTPUT_SAMPLE_RATE,
             AUDIO_I2S_GPIO_MCLK, AUDIO_I2S_GPIO_BCLK, AUDIO_I2S_GPIO_WS, AUDIO_I2S_GPIO_DOUT, AUDIO_I2S_GPIO_DIN,
             AUDIO_CODEC_PA_PIN, AUDIO_CODEC_ES8311_ADDR);
         return &audio_codec;
