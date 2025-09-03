@@ -1,3 +1,9 @@
+/*
+ * @Date: 2025-08-25 20:36:34
+ * @LastEditors: zhouke
+ * @LastEditTime: 2025-09-02 21:18:26
+ * @FilePath: \xiaozhi-esp32\main\boards\movecall-moji-esp32s3\movecall_moji_esp32s3.cc
+ */
 #include "wifi_board.h"
 #include "codecs/es8311_audio_codec.h"
 #include "display/lcd_display.h"
@@ -13,7 +19,7 @@
 
 #include <esp_lcd_panel_io.h>
 #include <esp_lcd_panel_ops.h>
-#include <esp_lcd_gc9a01.h>
+#include <esp_lcd_gc9d01.h>
 
 #include "driver/gpio.h"
 #include "driver/spi_master.h"
@@ -75,41 +81,55 @@ private:
     // SPI初始化
     void InitializeSpi() {
         ESP_LOGI(TAG, "Initialize SPI bus");
-        spi_bus_config_t buscfg = GC9A01_PANEL_BUS_SPI_CONFIG(DISPLAY_SPI_SCLK_PIN, DISPLAY_SPI_MOSI_PIN, 
-                                    DISPLAY_WIDTH * DISPLAY_HEIGHT * sizeof(uint16_t));
+        spi_bus_config_t buscfg = {};
+        buscfg.mosi_io_num = DISPLAY_SPI_MOSI_PIN;
+        buscfg.miso_io_num = GPIO_NUM_NC;
+        buscfg.sclk_io_num = DISPLAY_SPI_SCLK_PIN;
+        buscfg.quadwp_io_num = GPIO_NUM_NC;
+        buscfg.quadhd_io_num = GPIO_NUM_NC;
+        buscfg.max_transfer_sz = DISPLAY_WIDTH * DISPLAY_HEIGHT * sizeof(uint16_t);
         ESP_ERROR_CHECK(spi_bus_initialize(SPI3_HOST, &buscfg, SPI_DMA_CH_AUTO));
     }
 
     // GC9A01初始化
-    void InitializeGc9a01Display() {
+    void InitializeGc9d01Display() {
         ESP_LOGI(TAG, "Init GC9A01 display");
 
         ESP_LOGI(TAG, "Install panel IO");
-        esp_lcd_panel_io_handle_t io_handle = NULL;
-        esp_lcd_panel_io_spi_config_t io_config = GC9A01_PANEL_IO_SPI_CONFIG(DISPLAY_SPI_CS_PIN, DISPLAY_SPI_DC_PIN, NULL, NULL);
+        esp_lcd_panel_io_handle_t panel_io = nullptr;
+        esp_lcd_panel_handle_t panel = nullptr;
+
+        // 液晶屏控制IO初始化
+        ESP_LOGD(TAG, "Install panel IO");
+        esp_lcd_panel_io_spi_config_t io_config = {};
+        io_config.cs_gpio_num = DISPLAY_SPI_CS_PIN;
+        io_config.dc_gpio_num = DISPLAY_SPI_DC_PIN;
+        io_config.spi_mode = 0;
         io_config.pclk_hz = DISPLAY_SPI_SCLK_HZ;
-        ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &io_handle));
+        io_config.trans_queue_depth = 10;
+        io_config.lcd_cmd_bits = 8;
+        io_config.lcd_param_bits = 8;
+        ESP_ERROR_CHECK(esp_lcd_new_panel_io_spi(SPI3_HOST, &io_config, &panel_io));
     
-        ESP_LOGI(TAG, "Install GC9A01 panel driver");
-        esp_lcd_panel_handle_t panel_handle = NULL;
+        ESP_LOGI(TAG, "Install GC9D01 panel driver");
         esp_lcd_panel_dev_config_t panel_config = {};
         panel_config.reset_gpio_num = DISPLAY_SPI_RESET_PIN;    // Set to -1 if not use
         panel_config.rgb_endian = LCD_RGB_ENDIAN_BGR;           //LCD_RGB_ENDIAN_RGB;
         panel_config.bits_per_pixel = 16;                       // Implemented by LCD command `3Ah` (16/18)
 
-        ESP_ERROR_CHECK(esp_lcd_new_panel_gc9a01(io_handle, &panel_config, &panel_handle));
-        ESP_ERROR_CHECK(esp_lcd_panel_reset(panel_handle));
-        ESP_ERROR_CHECK(esp_lcd_panel_init(panel_handle));
-        ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel_handle, true));
-        ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel_handle, true, false));
-        ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel_handle, true)); 
+        ESP_ERROR_CHECK(esp_lcd_new_panel_gc9d01(panel_io, &panel_config, &panel));
+        ESP_ERROR_CHECK(esp_lcd_panel_reset(panel));
+        ESP_ERROR_CHECK(esp_lcd_panel_init(panel));
+        ESP_ERROR_CHECK(esp_lcd_panel_invert_color(panel, false));
+        ESP_ERROR_CHECK(esp_lcd_panel_mirror(panel, false, false));
+        ESP_ERROR_CHECK(esp_lcd_panel_disp_on_off(panel, true)); 
 
-        display_ = new SpiLcdDisplay(io_handle, panel_handle,
+        display_ = new SpiLcdDisplay(panel_io, panel,
                                     DISPLAY_WIDTH, DISPLAY_HEIGHT, DISPLAY_OFFSET_X, DISPLAY_OFFSET_Y, DISPLAY_MIRROR_X, DISPLAY_MIRROR_Y, DISPLAY_SWAP_XY,
                                     {
                                         .text_font = &font_puhui_20_4,
                                         .icon_font = &font_awesome_20_4,
-                                        .emoji_font = font_emoji_64_init(),
+                                        .emoji_font = font_emoji_32_init(),
                                     });
     }
 
@@ -127,7 +147,7 @@ public:
     MovecallMojiESP32S3() : boot_button_(BOOT_BUTTON_GPIO) {  
         InitializeCodecI2c();
         InitializeSpi();
-        InitializeGc9a01Display();
+        InitializeGc9d01Display();
         InitializeButtons();
         GetBacklight()->RestoreBrightness();
     }

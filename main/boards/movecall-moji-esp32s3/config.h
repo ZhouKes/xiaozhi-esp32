@@ -22,9 +22,9 @@
 #define BUILTIN_LED_GPIO        GPIO_NUM_21
 #define BOOT_BUTTON_GPIO        GPIO_NUM_0
 
-#define DISPLAY_WIDTH   240
-#define DISPLAY_HEIGHT  240
-#define DISPLAY_MIRROR_X true
+#define DISPLAY_WIDTH   160
+#define DISPLAY_HEIGHT  160
+#define DISPLAY_MIRROR_X false
 #define DISPLAY_MIRROR_Y false
 #define DISPLAY_SWAP_XY false
 
