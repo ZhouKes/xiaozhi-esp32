@@ -260,9 +260,16 @@ MipiLcdDisplay::MipiLcdDisplay(esp_lcd_panel_io_handle_t panel_io, esp_lcd_panel
             .mirror_x = mirror_x,
             .mirror_y = mirror_y,
         },
+#if CONFIG_BOARD_TYPE_WAVESHARE_ESP32_P4_NANO_HDMI
+        .color_format = LV_COLOR_FORMAT_RGB888,
+#endif        
         .flags = {
+#if CONFIG_BOARD_TYPE_WAVESHARE_ESP32_P4_NANO_HDMI
+            .buff_dma = false,
+#else
             .buff_dma = true,
-            .buff_spiram =false,
+#endif
+            .buff_spiram =false,    
             .sw_rotate = true,
         },
     };

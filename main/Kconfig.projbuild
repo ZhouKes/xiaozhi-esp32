@@ -356,6 +356,9 @@ choice BOARD_TYPE
     config BOARD_TYPE_WAVESHARE_ESP32_P4_NANO
         bool "Waveshare ESP32-P4-NANO"
         depends on IDF_TARGET_ESP32P4
+    config BOARD_TYPE_WAVESHARE_ESP32_P4_NANO_HDMI
+        bool "Waveshare ESP32-P4-NANO-HDMI"
+        depends on IDF_TARGET_ESP32P4
     config BOARD_TYPE_WAVESHARE_ESP32_P4_WIFI6_TOUCH_LCD_4B
         bool "Waveshare ESP32-P4-WIFI6-Touch-LCD-4B"
         depends on IDF_TARGET_ESP32P4

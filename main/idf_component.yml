@@ -114,6 +114,11 @@ dependencies:
     version: ^0.1.0
     rules:
     - if: target in [esp32s3, esp32c5]
+    
+  espressif/esp_lcd_lt8912b:
+    version: '^0.2.0'
+    rules:
+    - if: target in [esp32p4]
 
   espressif/esp_lcd_touch_st7123: ^1.0.0
   espressif/iot_usbh_rndis: 
